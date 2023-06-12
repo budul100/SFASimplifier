@@ -29,9 +29,7 @@ namespace SFASimplifier
                 var pointRepository = new FeatureRepository(
                     types: pointTypes,
                     attributes: pointAttributes);
-
                 pointRepository.Load(collectionRepository.Collection);
-                var points = pointRepository.Features;
 
                 var lineTypes = new OgcGeometryType[]
                 {
@@ -47,17 +45,17 @@ namespace SFASimplifier
                 var lineRepository = new FeatureRepository(
                     types: lineTypes,
                     attributes: lineAttributes);
-
                 lineRepository.Load(collectionRepository.Collection);
-                var lines = lineRepository.Features;
 
-                var relationRepository = new RelationRepository();
+                var relationRepository = new RelationRepository(
+                    addFirstLastCoordinates: false);
                 relationRepository.Load(
                     lines: lineRepository.Features,
                     points: pointRepository.Features);
 
                 var relations = relationRepository.Relations
-                    .OrderByDescending(l => l.Segments.Count()).ToArray();
+                    .OrderBy(r => r.LongName)
+                    .ThenByDescending(r => r.Segments.Count()).ToArray();
             }
         }
 

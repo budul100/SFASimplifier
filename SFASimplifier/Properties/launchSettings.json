@@ -3,6 +3,10 @@
     "Load Bremen": {
       "commandName": "Project",
       "commandLineArgs": "\"..\\..\\..\\..\\Additionals\\Samples\\Bremen-Komplett.geojson\""
+    },
+    "Load Ungarn": {
+      "commandName": "Project",
+      "commandLineArgs": "\"..\\..\\..\\..\\Additionals\\Samples\\Ungarn-Komplett.geojson\""
     }
   }
 }

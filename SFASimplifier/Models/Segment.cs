@@ -9,6 +9,8 @@ namespace SFASimplifier.Models
 
         public IEnumerable<Coordinate> Coordinates { get; set; }
 
+        public double Distance { get; set; }
+
         public Node From { get; set; }
 
         public Node To { get; set; }

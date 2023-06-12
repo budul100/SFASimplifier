@@ -15,7 +15,7 @@ namespace SFASimplifier.Models
 
         public long? Number { get; set; }
 
-        public int Position { get; set; }
+        public double Position { get; set; }
 
         public string ShortName { get; set; }
 

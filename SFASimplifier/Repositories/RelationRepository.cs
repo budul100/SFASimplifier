@@ -4,6 +4,7 @@ using NetTopologySuite.LinearReferencing;
 using SFASimplifier.Extensions;
 using SFASimplifier.Models;
 using StringExtensions;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -17,8 +18,18 @@ namespace SFASimplifier.Repositories
         private const string AttributeShortName = "railway:ref";
 
         private const int DistanceInMeters = 1;
+        private readonly bool addFirstLastCoordinates;
 
         #endregion Private Fields
+
+        #region Public Constructors
+
+        public RelationRepository(bool addFirstLastCoordinates)
+        {
+            this.addFirstLastCoordinates = addFirstLastCoordinates;
+        }
+
+        #endregion Public Constructors
 
         #region Public Properties
 
@@ -39,23 +50,42 @@ namespace SFASimplifier.Repositories
 
         #region Private Methods
 
-        private static IEnumerable<Node> GetNodes(Geometry geometry, IEnumerable<Feature> points)
+        private static Node GetNode(Coordinate coordinate, Geometry geometry, Feature point = default,
+            string longName = default, string shortName = default)
+        {
+            var location = LocationIndexOfPoint.IndexOf(
+                linearGeom: geometry,
+                inputPt: coordinate);
+
+            var position = LengthLocationMap.GetLength(
+                linearGeom: geometry,
+                loc: location);
+
+            var result = new Node
+            {
+                Coordinate = coordinate,
+                Feature = point,
+                LongName = longName,
+                ShortName = shortName,
+                Position = position,
+            };
+
+            return result;
+        }
+
+        private IEnumerable<Node> GetNodes(Geometry geometry, IEnumerable<Feature> points)
         {
             if (geometry.Coordinates.Length > 1)
             {
-                var coordinateFirst = geometry.Coordinates.First();
-
-                var positionFirst = LocationIndexOfPoint.IndexOf(
-                    linearGeom: geometry,
-                    inputPt: coordinateFirst).SegmentIndex;
-
-                var first = new Node
+                if (addFirstLastCoordinates)
                 {
-                    Coordinate = coordinateFirst,
-                    Position = positionFirst,
-                };
+                    var result = GetNode(
+                        coordinate: geometry.Coordinates[0],
+                        geometry: geometry);
 
-                yield return first;
+                    yield return result;
+                }
+
                 var pointGroups = points.LocatedIn(
                     geometry: geometry,
                     meters: DistanceInMeters)
@@ -63,13 +93,6 @@ namespace SFASimplifier.Repositories
 
                 foreach (var pointGroup in pointGroups)
                 {
-                    var shortName = pointGroup
-                        .Select(p => p.Attributes.GetOptionalValue(AttributeShortName)?.ToString())
-                        .Where(v => v != default)
-                        .GroupBy(v => v)
-                        .OrderByDescending(g => g.Count())
-                        .FirstOrDefault()?.Key;
-
                     var current = pointGroup
                         .Select(p => new
                         {
@@ -77,39 +100,35 @@ namespace SFASimplifier.Repositories
                             Coordinate = p.GetNearest(geometry),
                         }).OrderBy(g => g.Coordinate.Distance(g.Point.Geometry.Coordinate)).First();
 
-                    var position = LocationIndexOfPoint.IndexOf(
-                        linearGeom: geometry,
-                        inputPt: current.Coordinate).SegmentIndex;
+                    var shortName = pointGroup
+                        .Select(p => p.Attributes.GetOptionalValue(AttributeShortName)?.ToString())
+                        .Where(v => v != default)
+                        .GroupBy(v => v)
+                        .OrderByDescending(g => g.Count())
+                        .FirstOrDefault()?.Key;
 
-                    var result = new Node
-                    {
-                        Coordinate = current.Coordinate,
-                        Feature = current.Point,
-                        LongName = pointGroup.Key,
-                        ShortName = shortName,
-                        Position = position,
-                    };
+                    var result = GetNode(
+                        coordinate: current.Coordinate,
+                        geometry: geometry,
+                        point: current.Point,
+                        longName: pointGroup.Key,
+                        shortName: shortName);
 
                     yield return result;
                 }
 
-                var coordinateLast = geometry.Coordinates.Last();
-
-                var positionLast = LocationIndexOfPoint.IndexOf(
-                    linearGeom: geometry,
-                    inputPt: coordinateLast).SegmentIndex;
-
-                var last = new Node
+                if (addFirstLastCoordinates)
                 {
-                    Coordinate = coordinateLast,
-                    Position = positionLast,
-                };
+                    var result = GetNode(
+                        coordinate: geometry.Coordinates.Last(),
+                        geometry: geometry);
 
-                yield return last;
+                    yield return result;
+                }
             }
         }
 
-        private static IEnumerable<Segment> GetSegments(Geometry geometry, IEnumerable<Feature> points)
+        private IEnumerable<Segment> GetSegments(Geometry geometry, IEnumerable<Feature> points)
         {
             var nodes = GetNodes(
                 geometry: geometry,
@@ -123,31 +142,36 @@ namespace SFASimplifier.Repositories
 
             if (nodes.Count > 1)
             {
-                var coordinates = geometry.Coordinates.ToArray();
+                var allCoordinates = geometry.Coordinates.ToArray();
                 var nodeFrom = default(Node);
                 var indexFrom = default(int?);
 
                 for (var indexTo = 0; indexTo < geometry.Coordinates.Length; indexTo++)
                 {
-                    if (nodes.ContainsKey(coordinates[indexTo]))
+                    if (nodes.ContainsKey(allCoordinates[indexTo]))
                     {
+                        var nodeTo = nodes[allCoordinates[indexTo]];
+
                         if (nodeFrom != default)
                         {
+                            var coordinates = indexFrom.HasValue
+                                ? allCoordinates[indexFrom.Value..indexTo]
+                                : default;
+
+                            var distance = Math.Abs(nodeTo.Position - nodeFrom.Position) * 100000;
+
                             var result = new Segment
                             {
+                                Coordinates = coordinates,
+                                Distance = distance,
                                 From = nodeFrom,
-                                To = nodes[coordinates[indexTo]],
+                                To = nodeTo,
                             };
-
-                            if (indexFrom.HasValue)
-                            {
-                                result.Coordinates = coordinates[indexFrom.Value..indexTo];
-                            }
 
                             yield return result;
                         }
 
-                        nodeFrom = nodes[coordinates[indexTo]];
+                        nodeFrom = nodeTo;
                         indexFrom = default;
                     }
                     else if (!indexFrom.HasValue)
@@ -158,7 +182,7 @@ namespace SFASimplifier.Repositories
             }
         }
 
-        private static IEnumerable<Relation> LoadRelations(IEnumerable<Feature> lines, IEnumerable<Feature> points)
+        private IEnumerable<Relation> LoadRelations(IEnumerable<Feature> lines, IEnumerable<Feature> points)
         {
             foreach (var line in lines)
             {
