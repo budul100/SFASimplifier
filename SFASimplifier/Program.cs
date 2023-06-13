@@ -1,5 +1,9 @@
-﻿using NetTopologySuite.Geometries;
+﻿using NetTopologySuite.Features;
+using NetTopologySuite.Geometries;
+using NetTopologySuite.IO;
+using Newtonsoft.Json;
 using SFASimplifier.Repositories;
+using System.IO;
 using System.Linq;
 
 namespace SFASimplifier
@@ -47,15 +51,35 @@ namespace SFASimplifier
                     attributes: lineAttributes);
                 lineRepository.Load(collectionRepository.Collection);
 
-                var relationRepository = new RelationRepository(
-                    addFirstLastCoordinates: false);
-                relationRepository.Load(
+                var featureCollection = new FeatureCollection();
+
+                var locationRepository = new LocationRepository(
+                    featureCollection: featureCollection,
+                    maxDistance: 500,
+                    fuzzyScore: 80);
+
+                var segmentRepository = new SegmentRepository(
+                    locationFactory: locationRepository,
+                    distanceNodeToLine: 200);
+                segmentRepository.Load(
                     lines: lineRepository.Features,
                     points: pointRepository.Features);
 
-                var relations = relationRepository.Relations
-                    .OrderBy(r => r.LongName)
-                    .ThenByDescending(r => r.Segments.Count()).ToArray();
+                var linkRepository = new LinkRepository(
+                    featureCollection: featureCollection);
+                linkRepository.Load(
+                    segments: segmentRepository.Segments);
+
+                locationRepository.Complete();
+                linkRepository.Complete();
+
+                var serializer = GeoJsonSerializer.Create();
+                using var streamWriter = new StreamWriter(args[1]);
+                using var jsonWriter = new JsonTextWriter(streamWriter);
+
+                serializer.Serialize(
+                    jsonWriter: jsonWriter,
+                    value: featureCollection);
             }
         }
 

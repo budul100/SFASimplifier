@@ -1,19 +1,20 @@
 ﻿using NetTopologySuite.Features;
 using NetTopologySuite.Geometries;
+using System.Collections.Generic;
 
 namespace SFASimplifier.Models
 {
-    internal class Segment
+    internal class Link
     {
         #region Public Properties
 
-        public Node From { get; set; }
+        public Location From { get; set; }
 
         public Geometry Geometry { get; set; }
 
-        public Feature Line { get; set; }
+        public IEnumerable<Feature> Lines { get; set; }
 
-        public Node To { get; set; }
+        public Location To { get; set; }
 
         #endregion Public Properties
     }

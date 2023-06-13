@@ -9,15 +9,11 @@ namespace SFASimplifier.Models
 
         public Coordinate Coordinate { get; set; }
 
-        public Feature Feature { get; set; }
+        public Location Location { get; set; }
 
-        public string LongName { get; set; }
-
-        public long? Number { get; set; }
+        public Feature Point { get; set; }
 
         public double Position { get; set; }
-
-        public string ShortName { get; set; }
 
         #endregion Public Properties
     }

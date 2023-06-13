@@ -26,7 +26,7 @@ namespace SFASimplifier.Repositories
                     message: $"The file \"{file}\" does not exist.");
             }
 
-            Collection = LoadCollection(file);
+            Collection = GetCollection(file);
         }
 
         #endregion Public Constructors
@@ -39,7 +39,7 @@ namespace SFASimplifier.Repositories
 
         #region Private Methods
 
-        private static IEnumerable<Feature> LoadCollection(string file)
+        private static IEnumerable<Feature> GetCollection(string file)
         {
             var serializer = GeoJsonSerializer.Create();
 

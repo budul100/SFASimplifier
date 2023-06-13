@@ -37,14 +37,14 @@ namespace SFASimplifier.Repositories
 
         public void Load(IEnumerable<Feature> collection)
         {
-            Features = LoadFeatures(collection).ToArray();
+            Features = GetFeatures(collection).ToArray();
         }
 
         #endregion Public Methods
 
         #region Private Methods
 
-        private IEnumerable<Feature> LoadFeatures(IEnumerable<Feature> collection)
+        private IEnumerable<Feature> GetFeatures(IEnumerable<Feature> collection)
         {
             var relevants = collection
                 .Where(f => types.Contains(f.Geometry.OgcGeometryType)

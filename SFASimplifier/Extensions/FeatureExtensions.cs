@@ -1,7 +1,7 @@
 ﻿using NetTopologySuite.Features;
 using NetTopologySuite.Geometries;
 using NetTopologySuite.Geometries.Prepared;
-using NetTopologySuite.Operation.Distance;
+using StringExtensions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,6 +12,51 @@ namespace SFASimplifier.Extensions
     {
         #region Public Methods
 
+        public static bool AnyInDistance(this IEnumerable<Feature> features, Feature feature, double distance)
+        {
+            var result = features
+                .Select(f => f.GetDistance(feature))
+                .Any(d => d <= distance);
+
+            return result;
+        }
+
+        public static IEnumerable<Feature> GetAround(this IEnumerable<Feature> features, Geometry geometry, double meters)
+        {
+            var geoFactory = new PreparedGeometryFactory();
+
+            var distance = meters / (111.32 * 1000 * Math.Cos(geometry.Coordinate.Y * (Math.PI / 180)));
+            var buffer = geometry.Buffer(distance);
+            var preparedGeometry = geoFactory.Create(buffer);
+
+            var result = features
+                .Where(p => preparedGeometry.Contains(p.Geometry)).ToArray();
+
+            return result;
+        }
+
+        public static string GetAttribute(this Feature feature, string attributeName)
+        {
+            var result = feature.Attributes
+                .GetOptionalValue(attributeName)?.ToString();
+
+            return result;
+        }
+
+        public static double GetDistance(this IEnumerable<Feature> features, Feature feature)
+        {
+            var result = features.Min(f => f.GetDistance(feature));
+
+            return result;
+        }
+
+        public static double GetDistance(this Feature first, Feature second)
+        {
+            var result = second.Geometry.Distance(first.Geometry) * 100000;
+
+            return result;
+        }
+
         public static IEnumerable<Geometry> GetGeometries(this Feature feature)
         {
             var length = feature.Geometry.NumGeometries;
@@ -20,29 +65,21 @@ namespace SFASimplifier.Extensions
             {
                 var result = feature.Geometry.GetGeometryN(index);
 
-                yield return result;
+                if (!result.IsEmpty)
+                {
+                    yield return result;
+                }
             }
         }
 
-        public static Coordinate GetNearest(this Feature feature, Geometry geometry)
+        public static string GetPrimaryAttribute(this IEnumerable<Feature> features, string attributeName)
         {
-            var result = DistanceOp.NearestPoints(
-                g0: geometry,
-                g1: feature.Geometry).First();
-
-            return result;
-        }
-
-        public static IEnumerable<Feature> LocatedIn(this IEnumerable<Feature> points, Geometry geometry, int meters)
-        {
-            var geoFactory = new PreparedGeometryFactory();
-
-            var distance = meters / (111.32 * 1000 * Math.Cos(geometry.Coordinate.Y * (Math.PI / 180)));
-            var buffer = geometry.Buffer(distance);
-            var preparedGeometry = geoFactory.Create(buffer);
-
-            var result = points
-                .Where(p => preparedGeometry.Contains(p.Geometry)).ToArray();
+            var result = features
+                .Select(f => f.GetAttribute(attributeName))
+                .Where(a => !a.IsEmpty())
+                .GroupBy(a => a)
+                .OrderByDescending(g => g.Count())
+                .FirstOrDefault()?.Key;
 
             return result;
         }

@@ -1,19 +1,20 @@
 ﻿using NetTopologySuite.Features;
+using NetTopologySuite.Geometries;
 using System.Collections.Generic;
 
 namespace SFASimplifier.Models
 {
-    internal class Relation
+    internal class Location
     {
         #region Public Properties
 
-        public Feature Feature { get; set; }
+        public Geometry Geometry { get; set; }
 
         public string LongName { get; set; }
 
         public long? Number { get; set; }
 
-        public IEnumerable<Segment> Segments { get; set; }
+        public HashSet<Feature> Points { get; } = new HashSet<Feature>();
 
         public string ShortName { get; set; }
 

@@ -1,12 +1,12 @@
 {
   "profiles": {
-    "Load Bremen": {
+    "Convert Bremen": {
       "commandName": "Project",
-      "commandLineArgs": "\"..\\..\\..\\..\\Additionals\\Samples\\Bremen-Komplett.geojson\""
+      "commandLineArgs": "\"..\\..\\..\\..\\Additionals\\Samples\\Bremen-Komplett.geojson\" \"..\\..\\..\\..\\Additionals\\Samples\\Bremen-Komplett_.geojson\""
     },
-    "Load Ungarn": {
+    "Convert Ungarn": {
       "commandName": "Project",
-      "commandLineArgs": "\"..\\..\\..\\..\\Additionals\\Samples\\Ungarn-Komplett.geojson\""
+      "commandLineArgs": "\"..\\..\\..\\..\\Additionals\\Samples\\Ungarn-Komplett.geojson\" \"..\\..\\..\\..\\Additionals\\Samples\\Ungarn-Komplett_.geojson\""
     }
   }
 }
