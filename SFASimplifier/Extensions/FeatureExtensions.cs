@@ -12,15 +12,6 @@ namespace SFASimplifier.Extensions
     {
         #region Public Methods
 
-        public static bool AnyInDistance(this IEnumerable<Feature> features, Feature feature, double distance)
-        {
-            var result = features
-                .Select(f => f.GetDistance(feature))
-                .Any(d => d <= distance);
-
-            return result;
-        }
-
         public static IEnumerable<Feature> GetAround(this IEnumerable<Feature> features, Geometry geometry, double meters)
         {
             var geoFactory = new PreparedGeometryFactory();
@@ -37,7 +28,7 @@ namespace SFASimplifier.Extensions
 
         public static string GetAttribute(this Feature feature, string attributeName)
         {
-            var result = feature.Attributes
+            var result = feature.Attributes?
                 .GetOptionalValue(attributeName)?.ToString();
 
             return result;
@@ -65,7 +56,8 @@ namespace SFASimplifier.Extensions
             {
                 var result = feature.Geometry.GetGeometryN(index);
 
-                if (!result.IsEmpty)
+                if (!result.IsEmpty
+                    && result.Coordinates[0] != result.Coordinates.Last())
                 {
                     yield return result;
                 }

@@ -135,7 +135,8 @@ namespace SFASimplifier.Repositories
             var segmentGroups = segments
                 .GroupBy(s => HashExtensions.Extensions.GetSequenceHashOrdered(
                     s.From.Location.GetHashCode(),
-                    s.To.Location.GetHashCode())).ToArray();
+                    s.To.Location.GetHashCode()))
+                .OrderBy(g => g.Count()).ToArray();
 
             foreach (var segmentGroup in segmentGroups)
             {
@@ -149,7 +150,8 @@ namespace SFASimplifier.Repositories
                 var coordinates = GetCoordinates(
                     from: from,
                     to: to,
-                    geometries: geometries).ToArray();
+                    geometries: geometries)
+                    .WithoutAcute().ToArray();
 
                 var lineString = geometryFactory.CreateLineString(coordinates);
 

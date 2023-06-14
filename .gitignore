@@ -396,3 +396,5 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
+/Additionals/Samples/Bremen-Komplett_.geojson
+/Additionals/Samples/Ungarn-Komplett_.geojson

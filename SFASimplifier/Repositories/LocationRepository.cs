@@ -64,6 +64,64 @@ namespace SFASimplifier.Repositories
                 shortName: shortName,
                 number: number);
 
+            return result;
+        }
+
+        #endregion Public Methods
+
+        #region Private Methods
+
+        private static Feature GetFeature(Models.Location location)
+        {
+            var table = new Dictionary<string, object>();
+
+            foreach (var point in location.Points)
+            {
+                if (point.Attributes?.Count > 0)
+                {
+                    foreach (var name in point.Attributes.GetNames())
+                    {
+                        if (!table.ContainsKey(name))
+                        {
+                            table.Add(
+                                key: name,
+                                value: point.Attributes[name]);
+                        }
+                    }
+                }
+            }
+
+            var attributeTable = new AttributesTable(table);
+
+            var result = new Feature(
+                geometry: location.Geometry,
+                attributes: attributeTable);
+
+            return result;
+        }
+
+        private Models.Location GetLocation(Feature point, string longName, string shortName, int? number)
+        {
+            var result = locations
+                .Where(l => ((longName.IsEmpty() && shortName.IsEmpty() && !number.HasValue)
+                    || (!l.LongName.IsEmpty() && !longName.IsEmpty() && Fuzz.Ratio(l.LongName, longName) >= fuzzyScore)
+                    || (!l.ShortName.IsEmpty() && !shortName.IsEmpty() && l.ShortName == shortName)
+                    || (l.Number.HasValue && number.HasValue && l.Number == number))
+                    && (l.Points.GetDistance(point) < maxDistance))
+                .OrderBy(l => l.Points.GetDistance(point)).FirstOrDefault();
+
+            if (result == default)
+            {
+                result = new Models.Location
+                {
+                    LongName = longName,
+                    ShortName = shortName,
+                    Number = number,
+                };
+
+                locations.Add(result);
+            }
+
             if (result.LongName.IsEmpty())
             {
                 result.LongName = longName;
@@ -81,74 +139,17 @@ namespace SFASimplifier.Repositories
 
             result.Points.Add(point);
 
-            var coordinates = result.Points
-                .Select(p => p.Geometry.Coordinate)
-                .Distinct().ToArray();
-
-            if (coordinates.Length == 1)
+            if (result.Points.Count == 1)
             {
                 result.Geometry = result.Points.Single().Geometry;
             }
             else
             {
+                var coordinates = result.Points
+                    .Select(p => p.Geometry.Coordinate).ToArray();
+
                 result.Geometry = geometryFactory.CreateLineString(
                     coordinates: coordinates).Boundary;
-            }
-
-            return result;
-        }
-
-        #endregion Public Methods
-
-        #region Private Methods
-
-        private static Feature GetFeature(Models.Location location)
-        {
-            var table = new Dictionary<string, object>();
-
-            foreach (var point in location.Points)
-            {
-                foreach (var name in point.Attributes.GetNames())
-                {
-                    if (!table.ContainsKey(name))
-                    {
-                        table.Add(
-                            key: name,
-                            value: point.Attributes[name]);
-                    }
-                }
-            }
-
-            var attributeTable = new AttributesTable(table);
-
-            var result = new Feature(
-                geometry: location.Geometry,
-                attributes: attributeTable);
-
-            return result;
-        }
-
-        private Models.Location GetLocation(Feature point, string longName, string shortName, int? number)
-        {
-            var result = locations
-                .Where(l => ((!l.LongName.IsEmpty() && !longName.IsEmpty() && Fuzz.Ratio(l.LongName, longName) >= fuzzyScore)
-                    || (!l.ShortName.IsEmpty() && !shortName.IsEmpty() && l.ShortName == shortName)
-                    || (l.Number.HasValue && number.HasValue && l.Number == number))
-                    && l.Points.AnyInDistance(
-                        feature: point,
-                        distance: maxDistance))
-                .OrderBy(l => l.Points.GetDistance(point)).FirstOrDefault();
-
-            if (result == default)
-            {
-                result = new Models.Location
-                {
-                    LongName = longName,
-                    ShortName = shortName,
-                    Number = number,
-                };
-
-                locations.Add(result);
             }
 
             return result;

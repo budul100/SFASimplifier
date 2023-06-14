@@ -2,6 +2,7 @@
 using NetTopologySuite.Geometries;
 using SFASimplifier.Extensions;
 using SFASimplifier.Models;
+using StringExtensions;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -42,53 +43,105 @@ namespace SFASimplifier.Repositories
 
         public void Load(IEnumerable<Feature> lines, IEnumerable<Feature> points)
         {
+            var borders = GetBorders(lines)
+                .DistinctBy(p => p.Geometry.Coordinate).ToArray();
+
+            var allPoints = points
+                .Union(borders).ToArray();
+
             Segments = GetSegments(
                 lines: lines,
-                points: points).ToArray();
+                points: allPoints).ToArray();
         }
 
         #endregion Public Methods
 
         #region Private Methods
 
-        private IEnumerable<Node> GetNodes(Geometry geometry, IEnumerable<Feature> points)
+        private static IEnumerable<Node> GetLocationNodes(IEnumerable<Feature> points, Geometry geometry)
         {
-            var pointGroups = points.GetAround(
-                geometry: geometry,
-                meters: distanceNodeToLine)
-                .GroupBy(p => p.Attributes.GetOptionalValue(AttributeLongName).ToString()).ToArray();
-
-            foreach (var pointGroup in pointGroups)
+            foreach (var point in points)
             {
-                var relevant = pointGroup
-                    .Select(p => new
-                    {
-                        Point = p,
-                        Coordinate = p.Geometry.GetNearest(geometry),
-                    }).OrderBy(g => g.Coordinate.Distance(g.Point.Geometry.Coordinate)).First();
-
-                var shortName = pointGroup.GetPrimaryAttribute(AttributeShortName);
-                var position = geometry.GetPosition(relevant.Coordinate);
-
-                var location = locationFactory.Get(
-                    point: relevant.Point,
-                    longName: pointGroup.Key,
-                    shortName: shortName,
-                    number: default);
+                var coordinate = point.Geometry.GetNearest(geometry);
+                var distance = coordinate.Distance(point.Geometry.Coordinate);
 
                 var result = new Node
                 {
-                    Location = location,
-                    Position = position,
-                    Point = relevant.Point,
-                    Coordinate = relevant.Coordinate,
+                    Point = point,
+                    Coordinate = coordinate,
+                    Distance = distance,
                 };
 
                 yield return result;
             }
         }
 
-        private IEnumerable<Segment> GetSegments(Geometry geometry, IEnumerable<Node> nodes, Feature line)
+        private IEnumerable<Feature> GetBorders(IEnumerable<Feature> lines)
+        {
+            foreach (var line in lines)
+            {
+                var geometries = line.GetGeometries()
+                    .GetMerged().ToArray();
+
+                foreach (var geometry in geometries)
+                {
+                    var fromCoordinate = geometry.Coordinates[0];
+                    var fromGeometry = geometryFactory.CreatePoint(fromCoordinate);
+
+                    var fromPoint = new Feature(
+                        geometry: fromGeometry,
+                        attributes: default);
+
+                    yield return fromPoint;
+
+                    var toCoordinate = geometry.Coordinates.Last();
+                    var toGeometry = geometryFactory.CreatePoint(toCoordinate);
+
+                    var toPoint = new Feature(
+                        geometry: toGeometry,
+                        attributes: default);
+
+                    yield return toPoint;
+                }
+            }
+        }
+
+        private IEnumerable<Node> GetNodes(IEnumerable<Feature> points, Geometry geometry)
+        {
+            var pointGroups = points.GetAround(
+                geometry: geometry,
+                meters: distanceNodeToLine)
+                .GroupBy(p => p.GetAttribute(AttributeLongName) ?? p.GetHashCode().ToString()).ToArray();
+
+            if (pointGroups.Any(g => !g.GetPrimaryAttribute(AttributeLongName).IsEmpty()))
+            {
+                foreach (var pointGroup in pointGroups)
+                {
+                    var result = GetLocationNodes(
+                        points: pointGroup,
+                        geometry: geometry)
+                        .Where(n => !n.Point.GetAttribute(AttributeLongName).IsEmpty() || n.Distance == 0)
+                        .OrderBy(n => n.Distance).FirstOrDefault();
+
+                    if (result != default)
+                    {
+                        var longName = pointGroup.GetPrimaryAttribute(AttributeLongName);
+                        var shortName = pointGroup.GetPrimaryAttribute(AttributeShortName);
+
+                        result.Position = geometry.GetPosition(result.Coordinate);
+                        result.Location = locationFactory.Get(
+                            point: result.Point,
+                            longName: longName,
+                            shortName: shortName,
+                            number: default);
+
+                        yield return result;
+                    }
+                }
+            }
+        }
+
+        private IEnumerable<Segment> GetSegments(Feature line, Geometry geometry, IEnumerable<Node> nodes)
         {
             var allCoordinates = geometry.Coordinates.ToArray();
 
@@ -145,28 +198,31 @@ namespace SFASimplifier.Repositories
         {
             foreach (var line in lines)
             {
-                var geometries = line.GetGeometries().ToArray();
-
                 var name = line.GetAttribute(AttributeLongName);
 
-                foreach (var geometry in geometries)
+                if (name == "2200 Wanne-Eickel - Hamburg")
                 {
-                    var nodes = GetNodes(
-                        geometry: geometry,
-                        points: points)
-                        .GroupBy(n => n.Location)
-                        .Select(g => g.OrderByDescending(n => n.Location.Points.Count).First()).ToArray();
+                    var geometries = line.GetGeometries()
+                        .GetMerged().ToArray();
 
-                    if (nodes.Length > 1)
+                    foreach (var geometry in geometries)
                     {
-                        var segments = GetSegments(
-                            geometry: geometry,
-                            nodes: nodes,
-                            line: line).ToArray();
+                        var nodes = GetNodes(
+                            points: points,
+                            geometry: geometry)
+                            .DistinctBy(n => n.Location).ToArray();
 
-                        foreach (var segment in segments)
+                        if (nodes.Length > 1)
                         {
-                            yield return segment;
+                            var segments = GetSegments(
+                                line: line,
+                                geometry: geometry,
+                                nodes: nodes).ToArray();
+
+                            foreach (var segment in segments)
+                            {
+                                yield return segment;
+                            }
                         }
                     }
                 }
