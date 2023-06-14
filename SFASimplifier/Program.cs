@@ -66,7 +66,8 @@ namespace SFASimplifier
                     points: pointRepository.Features);
 
                 var linkRepository = new LinkRepository(
-                    featureCollection: featureCollection);
+                    featureCollection: featureCollection,
+                    angleMin: 2.7);
                 linkRepository.Load(
                     segments: segmentRepository.Segments);
 

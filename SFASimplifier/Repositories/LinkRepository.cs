@@ -11,6 +11,7 @@ namespace SFASimplifier.Repositories
     {
         #region Private Fields
 
+        private readonly double angleMin;
         private readonly FeatureCollection featureCollection;
         private readonly GeometryFactory geometryFactory;
 
@@ -18,10 +19,10 @@ namespace SFASimplifier.Repositories
 
         #region Public Constructors
 
-        public LinkRepository(FeatureCollection featureCollection)
+        public LinkRepository(FeatureCollection featureCollection, double angleMin)
         {
             this.featureCollection = featureCollection;
-
+            this.angleMin = angleMin;
             geometryFactory = new GeometryFactory();
         }
 
@@ -148,12 +149,13 @@ namespace SFASimplifier.Repositories
                     .Distinct().ToArray();
 
                 var coordinates = GetCoordinates(
-                    from: from,
-                    to: to,
-                    geometries: geometries)
-                    .WithoutAcute().ToArray();
+                        from: from,
+                        to: to,
+                        geometries: geometries)
+                    .WithoutAcute(angleMin).ToArray();
 
-                var lineString = geometryFactory.CreateLineString(coordinates);
+                var lineString = geometryFactory
+                    .CreateLineString(coordinates);
 
                 var lines = segmentGroup
                     .Select(s => s.Line).ToArray();

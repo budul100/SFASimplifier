@@ -7,21 +7,28 @@ namespace SFASimplifier.Extensions
 {
     internal static class CoordinateExtensions
     {
-        #region Private Fields
-
-        private const double AngleMin = AngleUtility.PiOver2;
-
-        #endregion Private Fields
-
         #region Public Methods
 
-        public static IEnumerable<Coordinate> WithoutAcute(this IEnumerable<Coordinate> coordinates)
+        public static bool IsAcuteAngle(this Coordinate via, Coordinate from, Coordinate to,
+            double angleMin = AngleUtility.PiOver2)
+        {
+            var angle = AngleUtility.AngleBetween(
+                tip1: from,
+                tail: via,
+                tip2: to);
+
+            return angle <= angleMin;
+        }
+
+        public static IEnumerable<Coordinate> WithoutAcute(this IEnumerable<Coordinate> coordinates, double angleMin)
         {
             var result = coordinates.ToArray();
 
-            result = result.WithoutAcuteBack().Reverse().ToArray();
+            result = result.WithoutAcuteBack(
+                angleMin: angleMin).Reverse().ToArray();
 
-            result = result.WithoutAcuteFront().Distinct().ToArray();
+            result = result.WithoutAcuteFront(
+                angleMin: angleMin).Distinct().ToArray();
 
             return result;
         }
@@ -30,7 +37,7 @@ namespace SFASimplifier.Extensions
 
         #region Private Methods
 
-        private static IEnumerable<Coordinate> WithoutAcuteBack(this IEnumerable<Coordinate> coordinates)
+        private static IEnumerable<Coordinate> WithoutAcuteBack(this IEnumerable<Coordinate> coordinates, double angleMin)
         {
             yield return coordinates.Last();
 
@@ -42,12 +49,10 @@ namespace SFASimplifier.Extensions
 
                 for (var index = allCoordinates.Length - 2; index > 0; index--)
                 {
-                    var angle = AngleUtility.AngleBetween(
-                        tip1: lastCoordinate,
-                        tail: allCoordinates[index],
-                        tip2: allCoordinates[index - 1]);
-
-                    if (angle > AngleMin)
+                    if (!allCoordinates[index].IsAcuteAngle(
+                        from: lastCoordinate,
+                        to: allCoordinates[index - 1],
+                        angleMin: angleMin))
                     {
                         yield return allCoordinates[index];
 
@@ -59,7 +64,7 @@ namespace SFASimplifier.Extensions
             }
         }
 
-        private static IEnumerable<Coordinate> WithoutAcuteFront(this IEnumerable<Coordinate> coordinates)
+        private static IEnumerable<Coordinate> WithoutAcuteFront(this IEnumerable<Coordinate> coordinates, double angleMin)
         {
             yield return coordinates.First();
 
@@ -71,12 +76,10 @@ namespace SFASimplifier.Extensions
 
                 for (var index = 1; index < allCoordinates.Length - 1; index++)
                 {
-                    var angle = AngleUtility.AngleBetween(
-                        tip1: lastCoordinate,
-                        tail: allCoordinates[index],
-                        tip2: allCoordinates[index + 1]);
-
-                    if (angle > AngleMin)
+                    if (!allCoordinates[index].IsAcuteAngle(
+                        from: lastCoordinate,
+                        to: allCoordinates[index + 1],
+                        angleMin: angleMin))
                     {
                         yield return allCoordinates[index];
 

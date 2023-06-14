@@ -80,8 +80,8 @@ namespace SFASimplifier.Repositories
         {
             foreach (var line in lines)
             {
-                var geometries = line.GetGeometries()
-                    .GetMerged().ToArray();
+                var geometries = line
+                    .GetGeometries().ToArray();
 
                 foreach (var geometry in geometries)
                 {
@@ -198,31 +198,25 @@ namespace SFASimplifier.Repositories
         {
             foreach (var line in lines)
             {
-                var name = line.GetAttribute(AttributeLongName);
+                var geometries = line.GetGeometries().ToArray();
 
-                if (name == "2200 Wanne-Eickel - Hamburg")
+                foreach (var geometry in geometries)
                 {
-                    var geometries = line.GetGeometries()
-                        .GetMerged().ToArray();
+                    var nodes = GetNodes(
+                        points: points,
+                        geometry: geometry)
+                        .DistinctBy(n => n.Location).ToArray();
 
-                    foreach (var geometry in geometries)
+                    if (nodes.Length > 1)
                     {
-                        var nodes = GetNodes(
-                            points: points,
-                            geometry: geometry)
-                            .DistinctBy(n => n.Location).ToArray();
+                        var segments = GetSegments(
+                            line: line,
+                            geometry: geometry,
+                            nodes: nodes).ToArray();
 
-                        if (nodes.Length > 1)
+                        foreach (var segment in segments)
                         {
-                            var segments = GetSegments(
-                                line: line,
-                                geometry: geometry,
-                                nodes: nodes).ToArray();
-
-                            foreach (var segment in segments)
-                            {
-                                yield return segment;
-                            }
+                            yield return segment;
                         }
                     }
                 }
