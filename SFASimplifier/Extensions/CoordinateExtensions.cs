@@ -9,6 +9,24 @@ namespace SFASimplifier.Extensions
     {
         #region Public Methods
 
+        public static Coordinate AfterFrom(this IEnumerable<Coordinate> coordinates)
+        {
+            var result = coordinates?.Count() > 1
+                ? coordinates.ElementAt(1)
+                : default;
+
+            return result;
+        }
+
+        public static Coordinate BeforeTo(this IEnumerable<Coordinate> coordinates)
+        {
+            var result = coordinates?.Count() > 1
+                ? coordinates.ElementAt(coordinates.Count() - 2)
+                : default;
+
+            return result;
+        }
+
         public static bool IsAcuteAngle(this Coordinate via, Coordinate from, Coordinate to,
             double angleMin = AngleUtility.PiOver2)
         {
@@ -20,7 +38,8 @@ namespace SFASimplifier.Extensions
             return angle <= angleMin;
         }
 
-        public static IEnumerable<Coordinate> WithoutAcute(this IEnumerable<Coordinate> coordinates, double angleMin)
+        public static IEnumerable<Coordinate> WithoutAcute(this IEnumerable<Coordinate> coordinates,
+            double angleMin)
         {
             var result = coordinates.ToArray();
 
@@ -37,14 +56,14 @@ namespace SFASimplifier.Extensions
 
         #region Private Methods
 
-        private static IEnumerable<Coordinate> WithoutAcuteBack(this IEnumerable<Coordinate> coordinates, double angleMin)
+        private static IEnumerable<Coordinate> WithoutAcuteBack(this IEnumerable<Coordinate> coordinates,
+            double angleMin)
         {
             yield return coordinates.Last();
 
             if (coordinates.Count() > 1)
             {
                 var allCoordinates = coordinates.ToArray();
-
                 var lastCoordinate = allCoordinates.Last();
 
                 for (var index = allCoordinates.Length - 2; index > 0; index--)
@@ -64,14 +83,14 @@ namespace SFASimplifier.Extensions
             }
         }
 
-        private static IEnumerable<Coordinate> WithoutAcuteFront(this IEnumerable<Coordinate> coordinates, double angleMin)
+        private static IEnumerable<Coordinate> WithoutAcuteFront(this IEnumerable<Coordinate> coordinates,
+            double angleMin)
         {
             yield return coordinates.First();
 
             if (coordinates.Count() > 1)
             {
                 var allCoordinates = coordinates.ToArray();
-
                 var lastCoordinate = allCoordinates[0];
 
                 for (var index = 1; index < allCoordinates.Length - 1; index++)

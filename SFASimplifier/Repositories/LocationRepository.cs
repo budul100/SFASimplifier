@@ -114,42 +114,47 @@ namespace SFASimplifier.Repositories
             {
                 result = new Models.Location
                 {
-                    LongName = longName,
-                    ShortName = shortName,
-                    Number = number,
+                    IsBorder = true,
                 };
 
                 locations.Add(result);
             }
 
-            if (result.LongName.IsEmpty())
+            if (result.LongName.IsEmpty()
+                && !longName.IsEmpty())
             {
                 result.LongName = longName;
+                result.IsBorder = false;
             }
 
-            if (result.ShortName.IsEmpty())
+            if (result.ShortName.IsEmpty()
+                && !shortName.IsEmpty())
             {
                 result.ShortName = shortName;
+                result.IsBorder = false;
             }
 
-            if (!result.Number.HasValue)
+            if (!result.Number.HasValue
+                && number.HasValue)
             {
                 result.Number = number;
+                result.IsBorder = false;
             }
 
             result.Points.Add(point);
 
-            if (result.Points.Count == 1)
+            var coordinates = result.Points
+                .Select(p => p.Geometry.Coordinate)
+                .Distinct().ToArray();
+
+            if (coordinates.Length > 1)
             {
-                result.Geometry = result.Points.Single().Geometry;
+                result.Geometry = geometryFactory.CreateLineString(
+                    coordinates: coordinates).Boundary;
             }
             else
             {
-                var coordinates = result.Points
-                    .Select(p => p.Geometry.Coordinate).ToArray();
-
-                result.Geometry = geometryFactory.CreateLineString(
-                    coordinates: coordinates).Boundary;
+                result.Geometry = result.Points.FirstOrDefault().Geometry;
             }
 
             return result;

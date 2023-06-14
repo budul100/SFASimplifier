@@ -23,6 +23,7 @@ namespace SFASimplifier.Repositories
         {
             this.featureCollection = featureCollection;
             this.angleMin = angleMin;
+
             geometryFactory = new GeometryFactory();
         }
 
@@ -39,8 +40,8 @@ namespace SFASimplifier.Repositories
         public void Complete()
         {
             var ordereds = Links
-                .OrderBy(s => s.From.LongName)
-                .ThenBy(s => s.To.LongName).ToArray();
+                .OrderBy(s => s.From?.LongName)
+                .ThenBy(s => s.To?.LongName).ToArray();
 
             foreach (var ordered in ordereds)
             {
@@ -50,10 +51,10 @@ namespace SFASimplifier.Repositories
             }
         }
 
-        public void Load(IEnumerable<Segment> segments)
+        public void Load(IEnumerable<Chain> chains)
         {
             Links = GetLinks(
-                segments: segments).ToArray();
+                chains: chains).ToArray();
         }
 
         #endregion Public Methods
@@ -64,14 +65,20 @@ namespace SFASimplifier.Repositories
         {
             var table = new Dictionary<string, object>();
 
+            var index = 0;
+
             foreach (var line in link.Lines)
             {
+                index++;
+
                 foreach (var name in line.Attributes.GetNames())
                 {
-                    if (!table.ContainsKey(name))
+                    var key = $"{name} ({index})";
+
+                    if (!table.ContainsKey(key))
                     {
                         table.Add(
-                            key: name,
+                            key: key,
                             value: line.Attributes[name]);
                     }
                 }
@@ -131,34 +138,34 @@ namespace SFASimplifier.Repositories
                 : from.Geometry.Centroid.Coordinate;
         }
 
-        private IEnumerable<Link> GetLinks(IEnumerable<Segment> segments)
+        private IEnumerable<Link> GetLinks(IEnumerable<Chain> chains)
         {
-            var segmentGroups = segments
-                .GroupBy(s => HashExtensions.Extensions.GetSequenceHashOrdered(
-                    s.From.Location.GetHashCode(),
-                    s.To.Location.GetHashCode()))
-                .OrderBy(g => g.Count()).ToArray();
+            var chainGroups = chains
+                .GroupBy(c => HashExtensions.Extensions.GetSequenceHashOrdered(
+                    c.From.Location.GetHashCode(),
+                    c.To.Location.GetHashCode())).ToArray();
 
-            foreach (var segmentGroup in segmentGroups)
+            foreach (var chainGroup in chainGroups)
             {
-                var from = segmentGroup.First().From.Location;
-                var to = segmentGroup.First().To.Location;
+                var from = chainGroup.First().From.Location;
+                var to = chainGroup.First().To.Location;
 
-                var geometries = segmentGroup
-                    .Select(s => s.Geometry)
-                    .Distinct().ToArray();
+                var geometries = chainGroup
+                    .Select(c => c.Geometry).ToArray();
 
                 var coordinates = GetCoordinates(
                         from: from,
                         to: to,
                         geometries: geometries)
+                    .Where(c => c != default)
                     .WithoutAcute(angleMin).ToArray();
 
                 var lineString = geometryFactory
                     .CreateLineString(coordinates);
 
-                var lines = segmentGroup
-                    .Select(s => s.Line).ToArray();
+                var lines = chainGroup
+                    .SelectMany(c => c.Segments.Select(s => s.Line))
+                    .Distinct().ToArray();
 
                 var result = new Link
                 {

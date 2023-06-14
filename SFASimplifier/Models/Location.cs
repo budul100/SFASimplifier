@@ -10,6 +10,8 @@ namespace SFASimplifier.Models
 
         public Geometry Geometry { get; set; }
 
+        public bool IsBorder { get; set; }
+
         public string LongName { get; set; }
 
         public long? Number { get; set; }

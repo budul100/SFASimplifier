@@ -1,4 +1,5 @@
-﻿using NetTopologySuite.Features;
+﻿using NetTopologySuite.Algorithm;
+using NetTopologySuite.Features;
 using NetTopologySuite.Geometries;
 using SFASimplifier.Extensions;
 using SFASimplifier.Models;
@@ -62,14 +63,16 @@ namespace SFASimplifier.Repositories
         {
             foreach (var point in points)
             {
-                var coordinate = point.Geometry.GetNearest(geometry);
+                var coordinate = geometry.GetNearest(point.Geometry);
                 var distance = coordinate.Distance(point.Geometry.Coordinate);
+                var position = geometry.GetPosition(coordinate);
 
                 var result = new Node
                 {
                     Point = point,
                     Coordinate = coordinate,
                     Distance = distance,
+                    Position = position,
                 };
 
                 yield return result;
@@ -85,8 +88,8 @@ namespace SFASimplifier.Repositories
 
                 foreach (var geometry in geometries)
                 {
-                    var fromCoordinate = geometry.Coordinates[0];
-                    var fromGeometry = geometryFactory.CreatePoint(fromCoordinate);
+                    var fromGeometry = geometryFactory
+                        .CreatePoint(geometry.Coordinates[0]);
 
                     var fromPoint = new Feature(
                         geometry: fromGeometry,
@@ -94,8 +97,26 @@ namespace SFASimplifier.Repositories
 
                     yield return fromPoint;
 
-                    var toCoordinate = geometry.Coordinates.Last();
-                    var toGeometry = geometryFactory.CreatePoint(toCoordinate);
+                    for (var index = geometry.Coordinates.Length - 2; index > 0; index--)
+                    {
+                        if (geometry.Coordinates[index].IsAcuteAngle(
+                            from: geometry.Coordinates[index - 1],
+                            to: geometry.Coordinates[index + 1],
+                            angleMin: AngleUtility.PiOver4))
+                        {
+                            var angleGeometry = geometryFactory
+                                .CreatePoint(geometry.Coordinates[index]);
+
+                            var anglePoint = new Feature(
+                                geometry: angleGeometry,
+                                attributes: default);
+
+                            yield return anglePoint;
+                        }
+                    }
+
+                    var toGeometry = geometryFactory
+                        .CreatePoint(geometry.Coordinates.Last());
 
                     var toPoint = new Feature(
                         geometry: toGeometry,
@@ -117,25 +138,23 @@ namespace SFASimplifier.Repositories
             {
                 foreach (var pointGroup in pointGroups)
                 {
-                    var result = GetLocationNodes(
+                    var relevants = GetLocationNodes(
                         points: pointGroup,
                         geometry: geometry)
-                        .Where(n => !n.Point.GetAttribute(AttributeLongName).IsEmpty() || n.Distance == 0)
-                        .OrderBy(n => n.Distance).FirstOrDefault();
+                        .Where(n => !n.Point.GetAttribute(AttributeLongName).IsEmpty() || n.Distance == 0).ToArray();
 
-                    if (result != default)
+                    var longName = pointGroup.GetPrimaryAttribute(AttributeLongName);
+                    var shortName = pointGroup.GetPrimaryAttribute(AttributeShortName);
+
+                    foreach (var relevant in relevants)
                     {
-                        var longName = pointGroup.GetPrimaryAttribute(AttributeLongName);
-                        var shortName = pointGroup.GetPrimaryAttribute(AttributeShortName);
-
-                        result.Position = geometry.GetPosition(result.Coordinate);
-                        result.Location = locationFactory.Get(
-                            point: result.Point,
+                        relevant.Location = locationFactory.Get(
+                            point: relevant.Point,
                             longName: longName,
                             shortName: shortName,
                             number: default);
 
-                        yield return result;
+                        yield return relevant;
                     }
                 }
             }
@@ -154,38 +173,44 @@ namespace SFASimplifier.Repositories
             {
                 var positionTo = geometry.GetPosition(allCoordinates[indexTo]);
 
-                var nodeTo = nodes
-                    .FirstOrDefault(n => n.Position >= positionFrom
-                        && n.Position <= positionTo);
+                var nodeTos = nodes
+                    .Where(n => n.Position >= positionFrom
+                        && n.Position <= positionTo)
+                    .OrderBy(n => n.Position).ToArray();
 
-                if (nodeTo != default
-                    && nodeTo != nodeFrom)
+                foreach (var nodeTo in nodeTos)
                 {
-                    var segmentCoordinates = indexFrom.HasValue
-                        ? allCoordinates[indexFrom.Value..indexTo]
-                        : default;
-
-                    if (nodeFrom != default
-                        && segmentCoordinates?.Length > 1)
+                    if (nodeTo != default
+                        && nodeTo?.Location != nodeFrom?.Location)
                     {
-                        var segmentGeometry = geometryFactory.CreateLineString(
-                            coordinates: segmentCoordinates);
+                        var segmentCoordinates = indexFrom.HasValue
+                            ? allCoordinates[indexFrom.Value..indexTo]
+                            : default;
 
-                        var result = new Segment
+                        if (nodeFrom != default
+                            && segmentCoordinates?.Length > 1)
                         {
-                            From = nodeFrom,
-                            Geometry = segmentGeometry,
-                            Line = line,
-                            To = nodeTo,
-                        };
+                            var segmentGeometry = geometryFactory.CreateLineString(
+                                coordinates: segmentCoordinates);
 
-                        yield return result;
+                            var result = new Segment
+                            {
+                                From = nodeFrom,
+                                Geometry = segmentGeometry,
+                                Line = line,
+                                To = nodeTo,
+                            };
+
+                            yield return result;
+                        }
+
+                        nodeFrom = nodeTo;
+                        indexFrom = default;
                     }
-
-                    nodeFrom = nodeTo;
-                    indexFrom = default;
                 }
-                else if (!indexFrom.HasValue)
+
+                if (!nodeTos.Any()
+                    && !indexFrom.HasValue)
                 {
                     indexFrom = indexTo;
                 }
@@ -198,25 +223,36 @@ namespace SFASimplifier.Repositories
         {
             foreach (var line in lines)
             {
-                var geometries = line.GetGeometries().ToArray();
+                var name = line.GetAttribute(AttributeLongName);
 
-                foreach (var geometry in geometries)
+                // KBS 390 Bremen - Norddeich(Mole)
+                // KBS 125 Bremen - Bremerhaven
+                // Wanne-Eickel - Hamburg: Gleis 1
+
+                if (true)
                 {
-                    var nodes = GetNodes(
-                        points: points,
-                        geometry: geometry)
-                        .DistinctBy(n => n.Location).ToArray();
+                    var geometries = line.GetGeometries().ToArray();
 
-                    if (nodes.Length > 1)
+                    foreach (var geometry in geometries)
                     {
-                        var segments = GetSegments(
-                            line: line,
-                            geometry: geometry,
-                            nodes: nodes).ToArray();
+                        var nodes = GetNodes(
+                            points: points,
+                            geometry: geometry)
+                            .GroupBy(n => n.Position)
+                            .Select(g => g.OrderByDescending(n => !n.Location.IsBorder).First())
+                            .OrderBy(n => n.Position).ToArray();
 
-                        foreach (var segment in segments)
+                        if (nodes.Length > 1)
                         {
-                            yield return segment;
+                            var segments = GetSegments(
+                                line: line,
+                                geometry: geometry,
+                                nodes: nodes).ToArray();
+
+                            foreach (var segment in segments)
+                            {
+                                yield return segment;
+                            }
                         }
                     }
                 }

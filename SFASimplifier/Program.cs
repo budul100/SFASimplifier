@@ -55,21 +55,25 @@ namespace SFASimplifier
 
                 var locationRepository = new LocationRepository(
                     featureCollection: featureCollection,
-                    maxDistance: 1000,
+                    maxDistance: 500,
                     fuzzyScore: 80);
 
                 var segmentRepository = new SegmentRepository(
                     locationFactory: locationRepository,
-                    distanceNodeToLine: 20);
+                    distanceNodeToLine: 50);
                 segmentRepository.Load(
                     lines: lineRepository.Features,
                     points: pointRepository.Features);
 
+                var chainRepository = new ChainRepository(
+                    angleMin: 1);
+                chainRepository.Load(segmentRepository.Segments);
+
                 var linkRepository = new LinkRepository(
                     featureCollection: featureCollection,
-                    angleMin: 2.7);
+                    angleMin: 1);
                 linkRepository.Load(
-                    segments: segmentRepository.Segments);
+                    chains: chainRepository.Chains);
 
                 locationRepository.Complete();
                 linkRepository.Complete();
