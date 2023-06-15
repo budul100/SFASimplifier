@@ -70,7 +70,7 @@ namespace SFASimplifier.Factories
                 AddPoint(
                     geometry: fromGeometry);
 
-                for (var index = geometry.Coordinates.Length - 2; index > 0; index--)
+                for (var index = 1; index < geometry.Coordinates.Length - 1; index++)
                 {
                     if (geometry.Coordinates[index].IsAcuteAngle(
                         from: geometry.Coordinates[index - 1],

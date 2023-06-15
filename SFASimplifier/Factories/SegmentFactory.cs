@@ -1,8 +1,10 @@
-﻿using NetTopologySuite.Features;
+﻿using NetTopologySuite.Algorithm;
+using NetTopologySuite.Features;
 using NetTopologySuite.Geometries;
 using SFASimplifier.Extensions;
 using SFASimplifier.Models;
 using StringExtensions;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -56,7 +58,8 @@ namespace SFASimplifier.Factories
 
                 if (name == "2: Budapest–Esztergom")
                 {
-                    var geometries = line.GetGeometries().ToArray();
+                    var geometries = GetGeometries(
+                        line: line).ToArray();
 
                     foreach (var geometry in geometries)
                     {
@@ -113,7 +116,8 @@ namespace SFASimplifier.Factories
                 var nodeTos = nodes
                     .Where(n => n.Position >= positionFrom
                         && n.Position <= positionTo)
-                    .OrderBy(n => n.Position).ToArray();
+                    .OrderByDescending(n => n.IsBorder)
+                    .ThenBy(n => n.Position).ToArray();
 
                 foreach (var nodeTo in nodeTos)
                 {
@@ -148,13 +152,45 @@ namespace SFASimplifier.Factories
                     }
                 }
 
-                if (!nodeTos.Any()
-                    && !indexFrom.HasValue)
+                indexFrom ??= indexTo;
+                positionFrom = positionTo;
+            }
+        }
+
+        private IEnumerable<Geometry> GetGeometries(Feature line)
+        {
+            var geometries = line.GetGeometries().ToArray();
+
+            foreach (var geometry in geometries)
+            {
+                var allCoordinates = geometry.Coordinates.ToArray();
+
+                var indexFrom = 0;
+                var indexTo = 0;
+
+                while (++indexTo < geometry.Coordinates.Length - 1)
                 {
-                    indexFrom = indexTo;
+                    if (geometry.Coordinates[indexTo].IsAcuteAngle(
+                        from: geometry.Coordinates[indexTo - 1],
+                        to: geometry.Coordinates[indexTo + 1],
+                        angleMin: AngleUtility.PiOver4))
+                    {
+                        var coordinates = allCoordinates[indexFrom..indexTo];
+                        var result = geometryFactory.CreateLineString(coordinates);
+
+                        yield return result;
+
+                        indexFrom = indexTo;
+                    }
                 }
 
-                positionFrom = positionTo;
+                if (indexTo > indexFrom)
+                {
+                    var coordinates = allCoordinates[indexFrom..indexTo];
+                    var result = geometryFactory.CreateLineString(coordinates);
+
+                    yield return result;
+                }
             }
         }
 

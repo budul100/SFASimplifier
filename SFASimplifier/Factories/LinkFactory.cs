@@ -36,16 +36,56 @@ namespace SFASimplifier.Factories
 
         public void Load(IEnumerable<Chain> chains)
         {
-            LoadChains(
-                chains: chains);
+            var chainGroups = chains
+                .GroupBy(c => HashExtensions.Extensions.GetSequenceHashOrdered(
+                    c.From.Location.GetHashCode(),
+                    c.To.Location.GetHashCode())).ToArray();
+
+            foreach (var chainGroup in chainGroups)
+            {
+                AddLinks(chainGroup);
+            }
         }
 
         #endregion Public Methods
 
         #region Private Methods
 
+        private void AddLinks(IEnumerable<Chain> chains)
+        {
+            var from = chains.First().From.Location;
+            var to = chains.First().To.Location;
+
+            var geometries = chains
+                .Select(c => c.Geometry).ToArray();
+
+            var coordinates = GetCoordinates(
+                    from: from,
+                    to: to,
+                    geometries: geometries)
+                .Where(c => c != default)
+                .WithoutAcute(angleMin).ToArray();
+
+            var lineString = geometryFactory
+                .CreateLineString(coordinates);
+
+            var lines = chains
+                .SelectMany(c => c.Segments.Select(s => s.Line))
+                .Distinct().ToArray();
+
+            var link = new Link
+            {
+                From = from,
+                Geometry = lineString,
+                Lines = lines,
+                To = to,
+            };
+
+            links.Add(link);
+        }
+
         private IEnumerable<Coordinate> GetCoordinates(Models.Location from, Models.Location to,
-            IEnumerable<Geometry> geometries)
+                    IEnumerable<Geometry> geometries)
         {
             var relevantGeometry = geometries
                 .OrderByDescending(g => g.Coordinates.Length).First();
@@ -87,47 +127,6 @@ namespace SFASimplifier.Factories
             yield return fromIsFirst
                 ? to.Geometry.Centroid.Coordinate
                 : from.Geometry.Centroid.Coordinate;
-        }
-
-        private void LoadChains(IEnumerable<Chain> chains)
-        {
-            var chainGroups = chains
-                .GroupBy(c => HashExtensions.Extensions.GetSequenceHashOrdered(
-                    c.From.Location.GetHashCode(),
-                    c.To.Location.GetHashCode())).ToArray();
-
-            foreach (var chainGroup in chainGroups)
-            {
-                var from = chainGroup.First().From.Location;
-                var to = chainGroup.First().To.Location;
-
-                var geometries = chainGroup
-                    .Select(c => c.Geometry).ToArray();
-
-                var coordinates = GetCoordinates(
-                        from: from,
-                        to: to,
-                        geometries: geometries)
-                    .Where(c => c != default)
-                    .WithoutAcute(angleMin).ToArray();
-
-                var lineString = geometryFactory
-                    .CreateLineString(coordinates);
-
-                var lines = chainGroup
-                    .SelectMany(c => c.Segments.Select(s => s.Line))
-                    .Distinct().ToArray();
-
-                var link = new Link
-                {
-                    From = from,
-                    Geometry = lineString,
-                    Lines = lines,
-                    To = to,
-                };
-
-                links.Add(link);
-            }
         }
 
         #endregion Private Methods

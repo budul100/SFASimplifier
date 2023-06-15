@@ -26,14 +26,18 @@ namespace SFASimplifier
                     maxDistance: 500,
                     fuzzyScore: 80);
 
-                var linkFactory = new LinkFactory(
-                    geometryFactory: geometryFactory,
-                    angleMin: 1);
-
                 var segmentFactory = new SegmentFactory(
                     geometryFactory: geometryFactory,
                     pointFactory: pointFactory,
                     locationFactory: locationFactory, distanceNodeToLine: 50);
+
+                var chainFactory = new ChainFactory(
+                    geometryFactory: geometryFactory,
+                    angleMin: 1);
+
+                var linkFactory = new LinkFactory(
+                    geometryFactory: geometryFactory,
+                    angleMin: 1);
 
                 var featureWriter = new FeatureWriter(
                     linkFactory: linkFactory);
@@ -74,13 +78,8 @@ namespace SFASimplifier
                 pointFactory.LoadLines(lineRepository.Features);
 
                 segmentFactory.Load(lineRepository.Features);
-
-                var chainRepository = new ChainRepository(
-                    angleMin: 1);
-                chainRepository.Load(segmentFactory.Segments);
-
-                linkFactory.Load(
-                    chains: chainRepository.Chains);
+                chainFactory.Load(segmentFactory.Segments);
+                linkFactory.Load(chainFactory.Chains);
 
                 featureWriter.Write(args[1]);
             }
