@@ -27,7 +27,7 @@ namespace SFASimplifier
 
                 var locationFactory = new LocationFactory(
                     geometryFactory: geometryFactory,
-                    maxDistance: 500,
+                    maxDistance: 300,
                     fuzzyScore: 80);
 
                 var segmentFactory = new SegmentFactory(
@@ -37,12 +37,12 @@ namespace SFASimplifier
 
                 var chainFactory = new ChainFactory(
                     geometryFactory: geometryFactory,
-                    angleMin: 2,
-                    allowFromBorderToBorder: true);
+                    angleMin: 2);
 
                 var linkFactory = new LinkFactory(
                     geometryFactory: geometryFactory,
-                    angleMin: 2);
+                    angleMin: 2,
+                    detourMax: 1.1);
 
                 var featureWriter = new FeatureWriter(
                     linkFactory: linkFactory);

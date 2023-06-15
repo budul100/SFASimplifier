@@ -1,4 +1,5 @@
 ﻿using NetTopologySuite.Geometries;
+using System.Collections.Generic;
 
 namespace SFASimplifier.Models
 {
@@ -12,7 +13,7 @@ namespace SFASimplifier.Models
 
         public Node To { get; set; }
 
-        public Way Way { get; set; }
+        public HashSet<Way> Ways { get; } = new();
 
         #endregion Public Properties
     }

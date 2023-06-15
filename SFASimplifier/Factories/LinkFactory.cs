@@ -1,4 +1,5 @@
-﻿using NetTopologySuite.Geometries;
+﻿using HashExtensions;
+using NetTopologySuite.Geometries;
 using SFASimplifier.Extensions;
 using SFASimplifier.Models;
 using System.Collections.Generic;
@@ -11,6 +12,7 @@ namespace SFASimplifier.Factories
         #region Private Fields
 
         private readonly double angleMin;
+        private readonly double detourMax;
         private readonly GeometryFactory geometryFactory;
         private readonly HashSet<Link> links = new();
 
@@ -18,10 +20,11 @@ namespace SFASimplifier.Factories
 
         #region Public Constructors
 
-        public LinkFactory(GeometryFactory geometryFactory, double angleMin)
+        public LinkFactory(GeometryFactory geometryFactory, double angleMin, double detourMax)
         {
             this.geometryFactory = geometryFactory;
             this.angleMin = angleMin;
+            this.detourMax = detourMax;
         }
 
         #endregion Public Constructors
@@ -37,9 +40,9 @@ namespace SFASimplifier.Factories
         public void Load(IEnumerable<Chain> chains)
         {
             var chainGroups = chains
-                .GroupBy(c => HashExtensions.Extensions.GetSequenceHashOrdered(
-                    c.From.Location.GetHashCode(),
-                    c.To.Location.GetHashCode())).ToArray();
+                .GroupBy(c => c.From.Location.GetHashCode() < c.To.Location.GetHashCode()
+                    ? (c.From.Location.GetHashCode(), c.To.Location.GetHashCode())
+                    : (c.To.Location.GetHashCode(), c.From.Location.GetHashCode())).ToArray();
 
             foreach (var chainGroup in chainGroups)
             {
@@ -56,8 +59,11 @@ namespace SFASimplifier.Factories
             var from = chains.First().From.Location;
             var to = chains.First().To.Location;
 
-            var geometries = chains
+            var allGeometries = chains
                 .Select(c => c.Geometry).ToArray();
+            var minLength = allGeometries.Min(g => g.Length);
+            var geometries = allGeometries
+                .Where(l => l.Length <= (minLength * detourMax)).ToArray();
 
             var coordinates = GetCoordinates(
                     from: from,
@@ -70,7 +76,7 @@ namespace SFASimplifier.Factories
                 .CreateLineString(coordinates);
 
             var ways = chains
-                .SelectMany(c => c.Segments.Select(s => s.Way))
+                .SelectMany(c => c.Segments.SelectMany(s => s.Ways))
                 .Distinct().ToArray();
 
             var link = new Link
@@ -91,7 +97,8 @@ namespace SFASimplifier.Factories
                 .OrderByDescending(g => g.Coordinates.Length).First();
 
             var otherGeometries = geometries
-                .Where(g => g != relevantGeometry).ToArray();
+                .Where(g => g != relevantGeometry)
+                .DistinctBy(g => g.Coordinates.GetSequenceHash()).ToArray();
 
             var fromIsFirst = from.Geometry.Coordinate.Distance(relevantGeometry.Coordinates[0]) <
                 to.Geometry.Coordinate.Distance(relevantGeometry.Coordinates[0]);

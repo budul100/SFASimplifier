@@ -1,4 +1,5 @@
-﻿using NetTopologySuite.Geometries;
+﻿using HashExtensions;
+using NetTopologySuite.Geometries;
 using SFASimplifier.Extensions;
 using SFASimplifier.Models;
 using System.Collections.Generic;
@@ -10,27 +11,25 @@ namespace SFASimplifier.Factories
     {
         #region Private Fields
 
-        private readonly bool allowFromBorderToBorder;
         private readonly double angleMin;
-        private readonly HashSet<Chain> chains = new();
+        private readonly Dictionary<int, Chain> chains = new();
         private readonly GeometryFactory geometryFactory;
 
         #endregion Private Fields
 
         #region Public Constructors
 
-        public ChainFactory(GeometryFactory geometryFactory, double angleMin, bool allowFromBorderToBorder)
+        public ChainFactory(GeometryFactory geometryFactory, double angleMin)
         {
             this.geometryFactory = geometryFactory;
             this.angleMin = angleMin;
-            this.allowFromBorderToBorder = allowFromBorderToBorder;
         }
 
         #endregion Public Constructors
 
         #region Public Properties
 
-        public IEnumerable<Chain> Chains => chains;
+        public IEnumerable<Chain> Chains => chains.Values;
 
         #endregion Public Properties
 
@@ -38,71 +37,27 @@ namespace SFASimplifier.Factories
 
         public void Load(IEnumerable<Segment> segments)
         {
-            AddWithoutBorder(segments);
-            AddWithBorder(segments);
+            AddEndeds(segments);
+            AddOpens(segments);
         }
 
         #endregion Public Methods
 
         #region Private Methods
 
-        private void AddWithBorder(IEnumerable<Segment> segments)
+        private void AddChain(Chain result)
         {
-            var allNodesFrom = segments
-                .Where(s => (s.From.Location.IsBorder || s.To.Location.IsBorder)
-                    && s.From.Location != s.To.Location)
-                .Select(s => s.From).ToArray();
+            var key = result.Segments.GetSequenceHash();
 
-            var allNodesTo = segments
-                .Where(s => (s.From.Location.IsBorder || s.To.Location.IsBorder)
-                    && s.From.Location != s.To.Location)
-                .Select(s => s.To).ToArray();
-
-            var nodesFrom = default(IEnumerable<Node>);
-            var nodesTo = default(IEnumerable<Node>);
-
-            if (allowFromBorderToBorder)
+            if (!chains.ContainsKey(key))
             {
-                var allPointsTo = allNodesTo
-                    .Select(n => n.Point).ToArray();
-
-                nodesFrom = allNodesFrom
-                    .Where(n => !allPointsTo.Contains(n.Point)).ToArray();
-
-                var allPointsFrom = allNodesFrom
-                    .Select(n => n.Point).ToArray();
-
-                nodesTo = allNodesTo
-                    .Where(n => !allPointsFrom.Contains(n.Point)).ToArray();
-            }
-            else
-            {
-                nodesFrom = allNodesFrom
-                    .Where(n => !n.Location.IsBorder).ToArray();
-
-                nodesTo = allNodesTo
-                    .Where(n => !n.Location.IsBorder).ToArray();
-            }
-
-            var relevants = segments
-                .Where(s => nodesFrom.Contains(s.From)).ToArray();
-
-            foreach (var relevant in relevants)
-            {
-                var result = GetChain(
-                    segment: relevant);
-
-                var relevantBeforeTo = relevant.Geometry.Coordinates.BeforeTo();
-
-                FindBorder(
-                    given: result,
-                    segments: segments,
-                    nodesTo: nodesTo,
-                    beforeTo: relevantBeforeTo);
+                chains.Add(
+                    key: key,
+                    value: result);
             }
         }
 
-        private void AddWithoutBorder(IEnumerable<Segment> segments)
+        private void AddEndeds(IEnumerable<Segment> segments)
         {
             var relevants = segments
                 .Where(s => !s.From.Location.IsBorder
@@ -111,25 +66,39 @@ namespace SFASimplifier.Factories
 
             foreach (var relevant in relevants)
             {
-                var result = new Chain
-                {
-                    From = relevant.From,
-                    To = relevant.To,
-                    Geometry = relevant.Geometry,
-                };
+                var result = GetChain(relevant);
 
                 result.Segments.Add(relevant);
 
-                chains.Add(result);
+                AddChain(result);
             }
         }
 
-        private void FindBorder(Chain given, IEnumerable<Segment> segments, IEnumerable<Node> nodesTo,
-            Coordinate beforeTo)
+        private void AddOpens(IEnumerable<Segment> segments)
         {
             var relevants = segments
-                .Where(s => !given.Segments.Contains(s)
-                    && given.To.Point == s.From.Point).ToArray();
+                .Where(s => !s.From.Location.IsBorder
+                    && s.To.Location.IsBorder).ToArray();
+
+            foreach (var relevant in relevants)
+            {
+                var result = GetChain(relevant);
+
+                var relevantBeforeTo = relevant.Geometry.Coordinates.BeforeTo();
+
+                FindChain(
+                    given: result,
+                    segments: segments,
+                    beforeTo: relevantBeforeTo);
+            }
+        }
+
+        private void FindChain(Chain given, IEnumerable<Segment> segments, Coordinate beforeTo)
+        {
+            var relevants = segments
+                .Where(s => given.To.Point == s.From.Point
+                    && !given.Segments.Contains(s)
+                    && !given.Locations.Contains(s.To.Location)).ToArray();
 
             foreach (var relevant in relevants)
             {
@@ -144,19 +113,18 @@ namespace SFASimplifier.Factories
                         segment: relevant,
                         given: given);
 
-                    if (!nodesTo.Contains(result.To))
+                    if (result.To.Location.IsBorder)
                     {
                         var relevantBeforeTo = relevant.Geometry.Coordinates.BeforeTo();
 
-                        FindBorder(
+                        FindChain(
                             given: result,
                             segments: segments,
-                            nodesTo: nodesTo,
                             beforeTo: relevantBeforeTo);
                     }
                     else if (result.From.Location != result.To.Location)
                     {
-                        chains.Add(result);
+                        AddChain(result);
                     }
                 }
             }
@@ -171,6 +139,8 @@ namespace SFASimplifier.Factories
             };
 
             result.Segments.Add(segment);
+            result.Locations.Add(segment.From.Location);
+            result.Locations.Add(segment.To.Location);
 
             if (given == default)
             {
@@ -179,6 +149,7 @@ namespace SFASimplifier.Factories
             else
             {
                 result.Segments.UnionWith(given.Segments);
+                result.Locations.UnionWith(given.Locations);
 
                 var coordinates = new List<Coordinate>();
 

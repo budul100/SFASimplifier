@@ -11,6 +11,8 @@ namespace SFASimplifier.Models
 
         public Geometry Geometry { get; set; }
 
+        public HashSet<Location> Locations { get; } = new HashSet<Location>();
+
         public HashSet<Segment> Segments { get; } = new HashSet<Segment>();
 
         public Node To { get; set; }

@@ -1,7 +1,7 @@
-﻿using NetTopologySuite.Geometries;
+﻿using HashExtensions;
+using NetTopologySuite.Geometries;
 using SFASimplifier.Extensions;
 using SFASimplifier.Models;
-using StringExtensions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -19,7 +19,7 @@ namespace SFASimplifier.Factories
         private readonly GeometryFactory geometryFactory;
         private readonly LocationFactory locationFactory;
         private readonly PointFactory pointFactory;
-        private readonly HashSet<Segment> segments = new();
+        private readonly Dictionary<int, Segment> segments = new();
 
         #endregion Private Fields
 
@@ -38,7 +38,7 @@ namespace SFASimplifier.Factories
 
         #region Public Properties
 
-        public IEnumerable<Segment> Segments => segments;
+        public IEnumerable<Segment> Segments => segments.Values;
 
         #endregion Public Properties
 
@@ -72,18 +72,26 @@ namespace SFASimplifier.Factories
 
         private void AddSegment(Way way, Node nodeFrom, Node nodeTo, Coordinate[] coordinates)
         {
-            var segmentGeometry = geometryFactory.CreateLineString(
+            var geometry = geometryFactory.CreateLineString(
                 coordinates: coordinates);
 
             var segment = new Segment
             {
                 From = nodeFrom,
-                Geometry = segmentGeometry,
+                Geometry = geometry,
                 To = nodeTo,
-                Way = way,
             };
 
-            segments.Add(segment);
+            var key = geometry.Coordinates.GetSequenceHash();
+
+            if (!segments.ContainsKey(key))
+            {
+                segments.Add(
+                    key: key,
+                    value: segment);
+            }
+
+            segments[key].Ways.Add(way);
         }
 
         private void AddSegments(Way way, IEnumerable<Node> nodes, Geometry geometry)
