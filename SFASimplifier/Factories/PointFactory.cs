@@ -100,6 +100,7 @@ namespace SFASimplifier.Factories
                 if (feature == default)
                 {
                     feature = new Feature();
+                    feature.Geometry = geometry;
                 }
 
                 points.Add(
