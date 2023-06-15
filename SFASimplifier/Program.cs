@@ -37,7 +37,8 @@ namespace SFASimplifier
 
                 var chainFactory = new ChainFactory(
                     geometryFactory: geometryFactory,
-                    angleMin: 2);
+                    angleMin: 2,
+                    allowFromBorderToBorder: true);
 
                 var linkFactory = new LinkFactory(
                     geometryFactory: geometryFactory,

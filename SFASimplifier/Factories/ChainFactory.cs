@@ -10,6 +10,7 @@ namespace SFASimplifier.Factories
     {
         #region Private Fields
 
+        private readonly bool allowFromBorderToBorder;
         private readonly double angleMin;
         private readonly HashSet<Chain> chains = new();
         private readonly GeometryFactory geometryFactory;
@@ -18,10 +19,11 @@ namespace SFASimplifier.Factories
 
         #region Public Constructors
 
-        public ChainFactory(GeometryFactory geometryFactory, double angleMin)
+        public ChainFactory(GeometryFactory geometryFactory, double angleMin, bool allowFromBorderToBorder)
         {
             this.geometryFactory = geometryFactory;
             this.angleMin = angleMin;
+            this.allowFromBorderToBorder = allowFromBorderToBorder;
         }
 
         #endregion Public Constructors
@@ -46,19 +48,57 @@ namespace SFASimplifier.Factories
 
         private void AddWithBorder(IEnumerable<Segment> segments)
         {
+            var allNodesFrom = segments
+                .Where(s => (s.From.Location.IsBorder || s.To.Location.IsBorder)
+                    && s.From.Location != s.To.Location)
+                .Select(s => s.From).ToArray();
+
+            var allNodesTo = segments
+                .Where(s => (s.From.Location.IsBorder || s.To.Location.IsBorder)
+                    && s.From.Location != s.To.Location)
+                .Select(s => s.To).ToArray();
+
+            var nodesFrom = default(IEnumerable<Node>);
+            var nodesTo = default(IEnumerable<Node>);
+
+            if (allowFromBorderToBorder)
+            {
+                var allPointsTo = allNodesTo
+                    .Select(n => n.Point).ToArray();
+
+                nodesFrom = allNodesFrom
+                    .Where(n => !allPointsTo.Contains(n.Point)).ToArray();
+
+                var allPointsFrom = allNodesFrom
+                    .Select(n => n.Point).ToArray();
+
+                nodesTo = allNodesTo
+                    .Where(n => !allPointsFrom.Contains(n.Point)).ToArray();
+            }
+            else
+            {
+                nodesFrom = allNodesFrom
+                    .Where(n => !n.Location.IsBorder).ToArray();
+
+                nodesTo = allNodesTo
+                    .Where(n => !n.Location.IsBorder).ToArray();
+            }
+
             var relevants = segments
-                .Where(s => !s.From.Location.IsBorder
-                    && s.To.Location.IsBorder).ToArray();
+                .Where(s => nodesFrom.Contains(s.From)).ToArray();
 
             foreach (var relevant in relevants)
             {
                 var result = GetChain(
                     segment: relevant);
 
+                var relevantBeforeTo = relevant.Geometry.Coordinates.BeforeTo();
+
                 FindBorder(
                     given: result,
-                    beforeTo: relevant.Geometry.Coordinates.BeforeTo(),
-                    segments: segments);
+                    segments: segments,
+                    nodesTo: nodesTo,
+                    beforeTo: relevantBeforeTo);
             }
         }
 
@@ -84,30 +124,35 @@ namespace SFASimplifier.Factories
             }
         }
 
-        private void FindBorder(Chain given, Coordinate beforeTo, IEnumerable<Segment> segments)
+        private void FindBorder(Chain given, IEnumerable<Segment> segments, IEnumerable<Node> nodesTo,
+            Coordinate beforeTo)
         {
             var relevants = segments
                 .Where(s => !given.Segments.Contains(s)
-                    && (given.To.Point == s.From.Point || given.To.Point == s.To.Point)).ToArray();
+                    && given.To.Point == s.From.Point).ToArray();
 
             foreach (var relevant in relevants)
             {
-                if (given.To.Point == relevant.From.Point
-                    && !given.To.Coordinate.IsAcuteAngle(
-                        from: beforeTo,
-                        to: relevant.Geometry.Coordinates.AfterFrom(),
-                        angleMin: angleMin))
+                var afterFrom = relevant.Geometry.Coordinates.AfterFrom();
+
+                if (!given.To.Coordinate.IsAcuteAngle(
+                    from: beforeTo,
+                    to: afterFrom,
+                    angleMin: angleMin))
                 {
                     var result = GetChain(
                         segment: relevant,
                         given: given);
 
-                    if (result.To.Location.IsBorder)
+                    if (!nodesTo.Contains(result.To))
                     {
+                        var relevantBeforeTo = relevant.Geometry.Coordinates.BeforeTo();
+
                         FindBorder(
                             given: result,
-                            beforeTo: relevant.Geometry.Coordinates.BeforeTo(),
-                            segments: segments);
+                            segments: segments,
+                            nodesTo: nodesTo,
+                            beforeTo: relevantBeforeTo);
                     }
                     else if (result.From.Location != result.To.Location)
                     {

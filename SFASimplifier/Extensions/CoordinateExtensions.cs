@@ -35,7 +35,7 @@ namespace SFASimplifier.Extensions
                 tail: via,
                 tip2: to);
 
-            return angle <= angleMin;
+            return angle > 0 && angle <= angleMin;
         }
 
         public static IEnumerable<Coordinate> WithoutAcute(this IEnumerable<Coordinate> coordinates,

@@ -150,26 +150,23 @@ namespace SFASimplifier.Factories
                 meters: distanceNodeToLine)
                 .GroupBy(p => p.GetAttribute(AttributeLongName) ?? p.GetHashCode().ToString()).ToArray();
 
-            if (pointGroups.Any(g => !g.GetPrimaryAttribute(AttributeLongName).IsEmpty()))
+            foreach (var pointGroup in pointGroups)
             {
-                foreach (var pointGroup in pointGroups)
+                var relevants = geometry.FilterNodes(pointGroup).ToArray();
+
+                var longName = pointGroup.GetPrimaryAttribute(AttributeLongName);
+                var shortName = pointGroup.GetPrimaryAttribute(AttributeShortName);
+
+                foreach (var relevant in relevants)
                 {
-                    var relevants = geometry.FilterNodes(pointGroup).ToArray();
+                    relevant.Location = locationFactory.Get(
+                        point: relevant.Point,
+                        longName: longName,
+                        shortName: shortName,
+                        number: default,
+                        isBorder: relevant.IsBorder);
 
-                    var longName = pointGroup.GetPrimaryAttribute(AttributeLongName);
-                    var shortName = pointGroup.GetPrimaryAttribute(AttributeShortName);
-
-                    foreach (var relevant in relevants)
-                    {
-                        relevant.Location = locationFactory.Get(
-                            point: relevant.Point,
-                            longName: longName,
-                            shortName: shortName,
-                            number: default,
-                            isBorder: relevant.IsBorder);
-
-                        yield return relevant;
-                    }
+                    yield return relevant;
                 }
             }
         }
