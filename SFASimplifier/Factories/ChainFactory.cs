@@ -96,7 +96,7 @@ namespace SFASimplifier.Factories
         private void FindChain(Chain given, IEnumerable<Segment> segments, Coordinate beforeTo)
         {
             var relevants = segments
-                .Where(s => given.To.Point == s.From.Point
+                .Where(s => given.To.Location == s.From.Location
                     && !given.Segments.Contains(s)
                     && !given.Locations.Contains(s.To.Location)).ToArray();
 
