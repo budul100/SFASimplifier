@@ -1,5 +1,4 @@
-﻿using NetTopologySuite.Features;
-using NetTopologySuite.Geometries;
+﻿using NetTopologySuite.Geometries;
 
 namespace SFASimplifier.Models
 {
@@ -11,9 +10,9 @@ namespace SFASimplifier.Models
 
         public Geometry Geometry { get; set; }
 
-        public Feature Line { get; set; }
-
         public Node To { get; set; }
+
+        public Way Way { get; set; }
 
         #endregion Public Properties
     }

@@ -1,7 +1,6 @@
-﻿using NetTopologySuite.Algorithm;
-using NetTopologySuite.Features;
+﻿using NetTopologySuite.Features;
 using NetTopologySuite.Geometries;
-using SFASimplifier.Extensions;
+using SFASimplifier.Models;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -12,7 +11,6 @@ namespace SFASimplifier.Factories
         #region Private Fields
 
         private readonly GeometryFactory geometryFactory;
-
         private readonly Dictionary<Geometry, Feature> points = new();
 
         #endregion Private Fields
@@ -34,15 +32,6 @@ namespace SFASimplifier.Factories
 
         #region Public Methods
 
-        public void LoadLines(IEnumerable<Feature> features)
-        {
-            foreach (var feature in features)
-            {
-                AddBorders(
-                    feature: feature);
-            }
-        }
-
         public void LoadPoints(IEnumerable<Feature> features)
         {
             foreach (var feature in features)
@@ -53,37 +42,28 @@ namespace SFASimplifier.Factories
             }
         }
 
+        public void LoadWays(IEnumerable<Way> ways)
+        {
+            foreach (var way in ways)
+            {
+                AddBorders(
+                    way: way);
+            }
+        }
+
         #endregion Public Methods
 
         #region Private Methods
 
-        private void AddBorders(Feature feature)
+        private void AddBorders(Way way)
         {
-            var geometries = feature
-                .GetGeometries().ToArray();
-
-            foreach (var geometry in geometries)
+            foreach (var geometry in way.Geometries)
             {
                 var fromGeometry = geometryFactory
                     .CreatePoint(geometry.Coordinates[0]);
 
                 AddPoint(
                     geometry: fromGeometry);
-
-                for (var index = 1; index < geometry.Coordinates.Length - 1; index++)
-                {
-                    if (geometry.Coordinates[index].IsAcuteAngle(
-                        from: geometry.Coordinates[index - 1],
-                        to: geometry.Coordinates[index + 1],
-                        angleMin: AngleUtility.PiOver4))
-                    {
-                        var angleGeometry = geometryFactory
-                            .CreatePoint(geometry.Coordinates[index]);
-
-                        AddPoint(
-                            geometry: angleGeometry);
-                    }
-                }
 
                 var toGeometry = geometryFactory
                     .CreatePoint(geometry.Coordinates.Last());
@@ -99,8 +79,10 @@ namespace SFASimplifier.Factories
             {
                 if (feature == default)
                 {
-                    feature = new Feature();
-                    feature.Geometry = geometry;
+                    feature = new Feature
+                    {
+                        Geometry = geometry
+                    };
                 }
 
                 points.Add(

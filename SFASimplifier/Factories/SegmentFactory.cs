@@ -1,6 +1,4 @@
-﻿using NetTopologySuite.Algorithm;
-using NetTopologySuite.Features;
-using NetTopologySuite.Geometries;
+﻿using NetTopologySuite.Geometries;
 using SFASimplifier.Extensions;
 using SFASimplifier.Models;
 using StringExtensions;
@@ -46,35 +44,23 @@ namespace SFASimplifier.Factories
 
         #region Public Methods
 
-        public void Load(IEnumerable<Feature> lines)
+        public void Load(IEnumerable<Way> ways)
         {
-            foreach (var line in lines)
+            foreach (var way in ways)
             {
-                var name = line.GetAttribute(AttributeLongName);
-
-                // KBS 390 Bremen - Norddeich(Mole)
-                // KBS 125 Bremen - Bremerhaven
-                // Wanne-Eickel - Hamburg: Gleis 1
-
-                if (name == "2: Budapest–Esztergom")
+                foreach (var geometry in way.Geometries)
                 {
-                    var geometries = GetGeometries(
-                        line: line).ToArray();
+                    var nodes = GetNodes(geometry)
+                        .GroupBy(n => n.Position)
+                        .Select(g => g.OrderByDescending(n => !n.Location.IsBorder).First())
+                        .OrderBy(n => n.Position).ToArray();
 
-                    foreach (var geometry in geometries)
+                    if (nodes.Length > 1)
                     {
-                        var nodes = GetNodes(geometry)
-                            .GroupBy(n => n.Position)
-                            .Select(g => g.OrderByDescending(n => !n.Location.IsBorder).First())
-                            .OrderBy(n => n.Position).ToArray();
-
-                        if (nodes.Length > 1)
-                        {
-                            AddSegments(
-                                nodes: nodes,
-                                geometry: geometry,
-                                line: line);
-                        }
+                        AddSegments(
+                            way: way,
+                            nodes: nodes,
+                            geometry: geometry);
                     }
                 }
             }
@@ -84,7 +70,7 @@ namespace SFASimplifier.Factories
 
         #region Private Methods
 
-        private void AddSegment(Node nodeFrom, Node nodeTo, Coordinate[] coordinates, Feature line)
+        private void AddSegment(Way way, Node nodeFrom, Node nodeTo, Coordinate[] coordinates)
         {
             var segmentGeometry = geometryFactory.CreateLineString(
                 coordinates: coordinates);
@@ -93,14 +79,14 @@ namespace SFASimplifier.Factories
             {
                 From = nodeFrom,
                 Geometry = segmentGeometry,
-                Line = line,
                 To = nodeTo,
+                Way = way,
             };
 
             segments.Add(segment);
         }
 
-        private void AddSegments(IEnumerable<Node> nodes, Geometry geometry, Feature line)
+        private void AddSegments(Way way, IEnumerable<Node> nodes, Geometry geometry)
         {
             var allCoordinates = geometry.Coordinates.ToArray();
 
@@ -132,19 +118,19 @@ namespace SFASimplifier.Factories
                             && coordinatesOnward?.Length > 1)
                         {
                             AddSegment(
+                                way: way,
                                 nodeFrom: nodeFrom,
                                 nodeTo: nodeTo,
-                                coordinates: coordinatesOnward,
-                                line: line);
+                                coordinates: coordinatesOnward);
 
                             var coordinatesBackward = coordinatesOnward
                                 .Reverse().ToArray();
 
                             AddSegment(
+                                way: way,
                                 nodeFrom: nodeTo,
                                 nodeTo: nodeFrom,
-                                coordinates: coordinatesBackward,
-                                line: line);
+                                coordinates: coordinatesBackward);
                         }
 
                         nodeFrom = nodeTo;
@@ -154,43 +140,6 @@ namespace SFASimplifier.Factories
 
                 indexFrom ??= indexTo;
                 positionFrom = positionTo;
-            }
-        }
-
-        private IEnumerable<Geometry> GetGeometries(Feature line)
-        {
-            var geometries = line.GetGeometries().ToArray();
-
-            foreach (var geometry in geometries)
-            {
-                var allCoordinates = geometry.Coordinates.ToArray();
-
-                var indexFrom = 0;
-                var indexTo = 0;
-
-                while (++indexTo < geometry.Coordinates.Length - 1)
-                {
-                    if (geometry.Coordinates[indexTo].IsAcuteAngle(
-                        from: geometry.Coordinates[indexTo - 1],
-                        to: geometry.Coordinates[indexTo + 1],
-                        angleMin: AngleUtility.PiOver4))
-                    {
-                        var coordinates = allCoordinates[indexFrom..indexTo];
-                        var result = geometryFactory.CreateLineString(coordinates);
-
-                        yield return result;
-
-                        indexFrom = indexTo;
-                    }
-                }
-
-                if (indexTo > indexFrom)
-                {
-                    var coordinates = allCoordinates[indexFrom..indexTo];
-                    var result = geometryFactory.CreateLineString(coordinates);
-
-                    yield return result;
-                }
             }
         }
 

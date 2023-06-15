@@ -15,7 +15,6 @@ namespace SFASimplifier.Writers
 
         private readonly FeatureCollection featureCollection = new();
         private readonly LinkFactory linkFactory;
-        private readonly LocationFactory locationFactory;
 
         #endregion Private Fields
 
@@ -54,11 +53,11 @@ namespace SFASimplifier.Writers
 
             var index = 0;
 
-            foreach (var line in link.Lines)
+            foreach (var way in link.Ways)
             {
                 index++;
 
-                foreach (var name in line.Attributes.GetNames())
+                foreach (var name in way.Line.Attributes.GetNames())
                 {
                     var key = $"{name} ({index})";
 
@@ -66,7 +65,7 @@ namespace SFASimplifier.Writers
                     {
                         table.Add(
                             key: key,
-                            value: line.Attributes[name]);
+                            value: way.Line.Attributes[name]);
                     }
                 }
             }

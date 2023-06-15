@@ -2,6 +2,7 @@
 using NetTopologySuite.Features;
 using NetTopologySuite.Geometries;
 using SFASimplifier.Extensions;
+using SFASimplifier.Models;
 using StringExtensions;
 using System.Collections.Generic;
 using System.Linq;
@@ -50,6 +51,35 @@ namespace SFASimplifier.Factories
             return result;
         }
 
+        public void Tidy(IEnumerable<Segment> segments)
+        {
+            var fromNodes = segments
+                .Select(s => s.From);
+            var toNodes = segments
+                .Select(s => s.To);
+
+            var locationGroups = fromNodes.Union(toNodes).Distinct()
+                .GroupBy(n => n.Location).ToArray();
+
+            foreach (var locationGroup in locationGroups)
+            {
+                var coordinates = locationGroup
+                    .Select(n => n.Point.Geometry.Coordinate)
+                    .Distinct().ToArray();
+
+                if (coordinates.Length > 1)
+                {
+                    locationGroup.Key.Geometry = geometryFactory.CreateLineString(
+                        coordinates: coordinates).Boundary.Centroid;
+                }
+                else
+                {
+                    locationGroup.Key.Geometry = geometryFactory.CreatePoint(
+                        coordinate: coordinates.Single());
+                }
+            }
+        }
+
         #endregion Public Methods
 
         #region Private Methods
@@ -96,20 +126,6 @@ namespace SFASimplifier.Factories
             }
 
             result.Points.Add(point);
-
-            var coordinates = result.Points
-                .Select(p => p.Geometry.Coordinate)
-                .Distinct().ToArray();
-
-            if (coordinates.Length > 1)
-            {
-                result.Geometry = geometryFactory.CreateLineString(
-                    coordinates: coordinates).Boundary;
-            }
-            else
-            {
-                result.Geometry = result.Points.FirstOrDefault().Geometry;
-            }
 
             return result;
         }

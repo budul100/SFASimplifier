@@ -69,23 +69,23 @@ namespace SFASimplifier.Factories
             var lineString = geometryFactory
                 .CreateLineString(coordinates);
 
-            var lines = chains
-                .SelectMany(c => c.Segments.Select(s => s.Line))
+            var ways = chains
+                .SelectMany(c => c.Segments.Select(s => s.Way))
                 .Distinct().ToArray();
 
             var link = new Link
             {
                 From = from,
                 Geometry = lineString,
-                Lines = lines,
                 To = to,
+                Ways = ways,
             };
 
             links.Add(link);
         }
 
         private IEnumerable<Coordinate> GetCoordinates(Models.Location from, Models.Location to,
-                    IEnumerable<Geometry> geometries)
+            IEnumerable<Geometry> geometries)
         {
             var relevantGeometry = geometries
                 .OrderByDescending(g => g.Coordinates.Length).First();
@@ -93,12 +93,12 @@ namespace SFASimplifier.Factories
             var otherGeometries = geometries
                 .Where(g => g != relevantGeometry).ToArray();
 
-            var fromIsFirst = from.Geometry.Centroid.Coordinate.Distance(relevantGeometry.Coordinates[0]) <
-                to.Geometry.Centroid.Coordinate.Distance(relevantGeometry.Coordinates[0]);
+            var fromIsFirst = from.Geometry.Coordinate.Distance(relevantGeometry.Coordinates[0]) <
+                to.Geometry.Coordinate.Distance(relevantGeometry.Coordinates[0]);
 
             yield return fromIsFirst
-                ? from.Geometry.Centroid.Coordinate
-                : to.Geometry.Centroid.Coordinate;
+                ? from.Geometry.Coordinate
+                : to.Geometry.Coordinate;
 
             foreach (var relevantCoordinate in relevantGeometry.Coordinates)
             {
@@ -125,8 +125,8 @@ namespace SFASimplifier.Factories
             }
 
             yield return fromIsFirst
-                ? to.Geometry.Centroid.Coordinate
-                : from.Geometry.Centroid.Coordinate;
+                ? to.Geometry.Coordinate
+                : from.Geometry.Coordinate;
         }
 
         #endregion Private Methods

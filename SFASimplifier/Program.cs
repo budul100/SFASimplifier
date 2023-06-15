@@ -18,6 +18,10 @@ namespace SFASimplifier
             {
                 var geometryFactory = new GeometryFactory();
 
+                var wayFactory = new WayFactory(
+                    geometryFactory: geometryFactory,
+                    borderMinLength: 1);
+
                 var pointFactory = new PointFactory(
                     geometryFactory: geometryFactory);
 
@@ -33,11 +37,11 @@ namespace SFASimplifier
 
                 var chainFactory = new ChainFactory(
                     geometryFactory: geometryFactory,
-                    angleMin: 1);
+                    angleMin: 2);
 
                 var linkFactory = new LinkFactory(
                     geometryFactory: geometryFactory,
-                    angleMin: 1);
+                    angleMin: 2);
 
                 var featureWriter = new FeatureWriter(
                     linkFactory: linkFactory);
@@ -58,6 +62,7 @@ namespace SFASimplifier
                     types: pointTypes,
                     attributes: pointAttributes);
                 pointRepository.Load(collectionRepository.Collection);
+
                 pointFactory.LoadPoints(pointRepository.Features);
 
                 var lineTypes = new OgcGeometryType[]
@@ -75,9 +80,13 @@ namespace SFASimplifier
                     types: lineTypes,
                     attributes: lineAttributes);
                 lineRepository.Load(collectionRepository.Collection);
-                pointFactory.LoadLines(lineRepository.Features);
 
-                segmentFactory.Load(lineRepository.Features);
+                wayFactory.Load(lineRepository.Features);
+                pointFactory.LoadWays(wayFactory.Ways);
+
+                segmentFactory.Load(wayFactory.Ways);
+                locationFactory.Tidy(segmentFactory.Segments);
+
                 chainFactory.Load(segmentFactory.Segments);
                 linkFactory.Load(chainFactory.Chains);
 
