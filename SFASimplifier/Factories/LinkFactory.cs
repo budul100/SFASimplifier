@@ -11,6 +11,8 @@ namespace SFASimplifier.Factories
     {
         #region Private Fields
 
+        private const int TakeMaxGeometries = 1000;
+
         private readonly double angleMin;
         private readonly double detourMax;
         private readonly GeometryFactory geometryFactory;
@@ -63,7 +65,8 @@ namespace SFASimplifier.Factories
                 .Select(c => c.Geometry).ToArray();
             var minLength = allGeometries.Min(g => g.Length);
             var geometries = allGeometries
-                .Where(l => l.Length <= (minLength * detourMax)).ToArray();
+                .Where(l => l.Length <= (minLength * detourMax))
+                .Take(TakeMaxGeometries).ToArray();
 
             var coordinates = GetCoordinates(
                     from: from,
