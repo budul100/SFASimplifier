@@ -229,7 +229,7 @@ namespace SFASimplifier.Repositories
                 // KBS 125 Bremen - Bremerhaven
                 // Wanne-Eickel - Hamburg: Gleis 1
 
-                if (true)
+                if (name == "2: Budapest–Esztergom")
                 {
                     var geometries = line.GetGeometries().ToArray();
 

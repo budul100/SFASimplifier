@@ -2,6 +2,7 @@
 using NetTopologySuite.Geometries;
 using NetTopologySuite.IO;
 using Newtonsoft.Json;
+using SFASimplifier.Factories;
 using SFASimplifier.Repositories;
 using System.IO;
 using System.Linq;
@@ -18,6 +19,11 @@ namespace SFASimplifier
 
             if (collectionRepository.Collection.Any())
             {
+                var geometryFactory = new GeometryFactory();
+
+                var pointFactory = new PointFactory(
+                    geometryFactory: geometryFactory);
+
                 var pointTypes = new OgcGeometryType[]
                 {
                     OgcGeometryType.Point,
@@ -34,6 +40,7 @@ namespace SFASimplifier
                     types: pointTypes,
                     attributes: pointAttributes);
                 pointRepository.Load(collectionRepository.Collection);
+                pointFactory.LoadPoints(pointRepository.Features);
 
                 var lineTypes = new OgcGeometryType[]
                 {
@@ -50,6 +57,18 @@ namespace SFASimplifier
                     types: lineTypes,
                     attributes: lineAttributes);
                 lineRepository.Load(collectionRepository.Collection);
+                pointFactory.LoadLines(lineRepository.Features);
+
+
+
+
+
+
+
+
+
+
+
 
                 var featureCollection = new FeatureCollection();
 
