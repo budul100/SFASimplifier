@@ -44,9 +44,12 @@ namespace SFASimplifier.Factories
             {
                 var name = line.GetAttribute(AttributeLongName);
 
-                AddWay(
-                    line: line,
-                    name: name);
+                if (name == "30: Székesfehérvár–Murakeresztúr")
+                {
+                    AddWay(
+                        line: line,
+                        name: name);
+                }
             }
         }
 
@@ -88,7 +91,10 @@ namespace SFASimplifier.Factories
                         to: geometry.Coordinates[indexTo + 1],
                         angleMin: AngleUtility.PiOver4))
                     {
-                        var result = GetGeometry(allCoordinates, indexFrom, indexTo);
+                        var result = GetGeometry(
+                            allCoordinates: allCoordinates,
+                            indexFrom: indexFrom,
+                            indexTo: indexTo);
 
                         if (result != default)
                         {
@@ -99,7 +105,10 @@ namespace SFASimplifier.Factories
                     }
                 }
 
-                var resultFinal = GetGeometry(allCoordinates, indexFrom, indexTo);
+                var resultFinal = GetGeometry(
+                    allCoordinates: allCoordinates,
+                    indexFrom: indexFrom,
+                    indexTo: geometry.Coordinates.Length);
 
                 if (resultFinal != default)
                 {

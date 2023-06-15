@@ -21,7 +21,7 @@ namespace SFASimplifier.Extensions
             var preparedGeometry = geoFactory.Create(buffer);
 
             var result = features
-                .Where(p => preparedGeometry.Contains(p.Geometry)).ToArray();
+                .Where(f => preparedGeometry.Contains(f.Geometry)).ToArray();
 
             return result;
         }
