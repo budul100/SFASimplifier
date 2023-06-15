@@ -1,97 +1,48 @@
-﻿using NetTopologySuite.Features;
-using NetTopologySuite.Geometries;
+﻿using NetTopologySuite.Geometries;
 using SFASimplifier.Extensions;
 using SFASimplifier.Models;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace SFASimplifier.Repositories
+namespace SFASimplifier.Factories
 {
-    internal class LinkRepository
+    internal class LinkFactory
     {
         #region Private Fields
 
         private readonly double angleMin;
-        private readonly FeatureCollection featureCollection;
         private readonly GeometryFactory geometryFactory;
+        private readonly HashSet<Link> links = new();
 
         #endregion Private Fields
 
         #region Public Constructors
 
-        public LinkRepository(FeatureCollection featureCollection, double angleMin)
+        public LinkFactory(GeometryFactory geometryFactory, double angleMin)
         {
-            this.featureCollection = featureCollection;
+            this.geometryFactory = geometryFactory;
             this.angleMin = angleMin;
-
-            geometryFactory = new GeometryFactory();
         }
 
         #endregion Public Constructors
 
         #region Public Properties
 
-        public IEnumerable<Link> Links { get; private set; }
+        public IEnumerable<Link> Links => links;
 
         #endregion Public Properties
 
         #region Public Methods
 
-        public void Complete()
-        {
-            var ordereds = Links
-                .OrderBy(s => s.From?.LongName)
-                .ThenBy(s => s.To?.LongName).ToArray();
-
-            foreach (var ordered in ordereds)
-            {
-                var feature = GetFeature(ordered);
-
-                featureCollection.Add(feature);
-            }
-        }
-
         public void Load(IEnumerable<Chain> chains)
         {
-            Links = GetLinks(
-                chains: chains).ToArray();
+            LoadChains(
+                chains: chains);
         }
 
         #endregion Public Methods
 
         #region Private Methods
-
-        private static Feature GetFeature(Models.Link link)
-        {
-            var table = new Dictionary<string, object>();
-
-            var index = 0;
-
-            foreach (var line in link.Lines)
-            {
-                index++;
-
-                foreach (var name in line.Attributes.GetNames())
-                {
-                    var key = $"{name} ({index})";
-
-                    if (!table.ContainsKey(key))
-                    {
-                        table.Add(
-                            key: key,
-                            value: line.Attributes[name]);
-                    }
-                }
-            }
-
-            var attributeTable = new AttributesTable(table);
-
-            var result = new Feature(
-                geometry: link.Geometry,
-                attributes: attributeTable);
-
-            return result;
-        }
 
         private IEnumerable<Coordinate> GetCoordinates(Models.Location from, Models.Location to,
             IEnumerable<Geometry> geometries)
@@ -138,7 +89,7 @@ namespace SFASimplifier.Repositories
                 : from.Geometry.Centroid.Coordinate;
         }
 
-        private IEnumerable<Link> GetLinks(IEnumerable<Chain> chains)
+        private void LoadChains(IEnumerable<Chain> chains)
         {
             var chainGroups = chains
                 .GroupBy(c => HashExtensions.Extensions.GetSequenceHashOrdered(
@@ -167,7 +118,7 @@ namespace SFASimplifier.Repositories
                     .SelectMany(c => c.Segments.Select(s => s.Line))
                     .Distinct().ToArray();
 
-                var result = new Link
+                var link = new Link
                 {
                     From = from,
                     Geometry = lineString,
@@ -175,7 +126,7 @@ namespace SFASimplifier.Repositories
                     To = to,
                 };
 
-                yield return result;
+                links.Add(link);
             }
         }
 

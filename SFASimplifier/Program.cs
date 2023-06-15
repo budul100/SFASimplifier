@@ -1,10 +1,7 @@
-﻿using NetTopologySuite.Features;
-using NetTopologySuite.Geometries;
-using NetTopologySuite.IO;
-using Newtonsoft.Json;
+﻿using NetTopologySuite.Geometries;
 using SFASimplifier.Factories;
 using SFASimplifier.Repositories;
-using System.IO;
+using SFASimplifier.Writers;
 using System.Linq;
 
 namespace SFASimplifier
@@ -23,6 +20,18 @@ namespace SFASimplifier
 
                 var pointFactory = new PointFactory(
                     geometryFactory: geometryFactory);
+
+                var locationFactory = new LocationFactory(
+                    geometryFactory: geometryFactory,
+                    maxDistance: 500,
+                    fuzzyScore: 80);
+
+                var linkFactory = new LinkFactory(
+                    geometryFactory: geometryFactory,
+                    angleMin: 1);
+
+                var featureWriter = new FeatureWriter(
+                    linkFactory: linkFactory);
 
                 var pointTypes = new OgcGeometryType[]
                 {
@@ -59,26 +68,8 @@ namespace SFASimplifier
                 lineRepository.Load(collectionRepository.Collection);
                 pointFactory.LoadLines(lineRepository.Features);
 
-
-
-
-
-
-
-
-
-
-
-
-                var featureCollection = new FeatureCollection();
-
-                var locationRepository = new LocationRepository(
-                    featureCollection: featureCollection,
-                    maxDistance: 500,
-                    fuzzyScore: 80);
-
                 var segmentRepository = new SegmentRepository(
-                    locationFactory: locationRepository,
+                    locationFactory: locationFactory,
                     distanceNodeToLine: 50);
                 segmentRepository.Load(
                     lines: lineRepository.Features,
@@ -88,22 +79,10 @@ namespace SFASimplifier
                     angleMin: 1);
                 chainRepository.Load(segmentRepository.Segments);
 
-                var linkRepository = new LinkRepository(
-                    featureCollection: featureCollection,
-                    angleMin: 1);
-                linkRepository.Load(
+                linkFactory.Load(
                     chains: chainRepository.Chains);
 
-                locationRepository.Complete();
-                linkRepository.Complete();
-
-                var serializer = GeoJsonSerializer.Create();
-                using var streamWriter = new StreamWriter(args[1]);
-                using var jsonWriter = new JsonTextWriter(streamWriter);
-
-                serializer.Serialize(
-                    jsonWriter: jsonWriter,
-                    value: featureCollection);
+                featureWriter.Write(args[1]);
             }
         }
 

@@ -6,13 +6,12 @@ using StringExtensions;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace SFASimplifier.Repositories
+namespace SFASimplifier.Factories
 {
-    internal class LocationRepository
+    internal class LocationFactory
     {
         #region Private Fields
 
-        private readonly FeatureCollection featureCollection;
         private readonly double fuzzyScore;
         private readonly GeometryFactory geometryFactory;
         private readonly HashSet<Models.Location> locations = new();
@@ -22,13 +21,11 @@ namespace SFASimplifier.Repositories
 
         #region Public Constructors
 
-        public LocationRepository(FeatureCollection featureCollection, double maxDistance, double fuzzyScore)
+        public LocationFactory(GeometryFactory geometryFactory, double maxDistance, double fuzzyScore)
         {
-            this.featureCollection = featureCollection;
+            this.geometryFactory = geometryFactory;
             this.maxDistance = maxDistance;
             this.fuzzyScore = fuzzyScore;
-
-            geometryFactory = new GeometryFactory();
         }
 
         #endregion Public Constructors
@@ -40,21 +37,6 @@ namespace SFASimplifier.Repositories
         #endregion Public Properties
 
         #region Public Methods
-
-        public void Complete()
-        {
-            var ordereds = locations
-                .OrderBy(l => l.LongName)
-                .ThenBy(l => l.ShortName)
-                .ThenBy(l => l.Number).ToArray();
-
-            foreach (var ordered in ordereds)
-            {
-                var feature = GetFeature(ordered);
-
-                featureCollection.Add(feature);
-            }
-        }
 
         public Models.Location Get(Feature point, string longName, string shortName, int? number)
         {
@@ -71,35 +53,6 @@ namespace SFASimplifier.Repositories
 
         #region Private Methods
 
-        private static Feature GetFeature(Models.Location location)
-        {
-            var table = new Dictionary<string, object>();
-
-            foreach (var point in location.Points)
-            {
-                if (point.Attributes?.Count > 0)
-                {
-                    foreach (var name in point.Attributes.GetNames())
-                    {
-                        if (!table.ContainsKey(name))
-                        {
-                            table.Add(
-                                key: name,
-                                value: point.Attributes[name]);
-                        }
-                    }
-                }
-            }
-
-            var attributeTable = new AttributesTable(table);
-
-            var result = new Feature(
-                geometry: location.Geometry,
-                attributes: attributeTable);
-
-            return result;
-        }
-
         private Models.Location GetLocation(Feature point, string longName, string shortName, int? number)
         {
             var result = locations
@@ -107,7 +60,7 @@ namespace SFASimplifier.Repositories
                     || (!l.LongName.IsEmpty() && !longName.IsEmpty() && Fuzz.Ratio(l.LongName, longName) >= fuzzyScore)
                     || (!l.ShortName.IsEmpty() && !shortName.IsEmpty() && l.ShortName == shortName)
                     || (l.Number.HasValue && number.HasValue && l.Number == number))
-                    && (l.Points.GetDistance(point) < maxDistance))
+                    && l.Points.GetDistance(point) < maxDistance)
                 .OrderBy(l => l.Points.GetDistance(point)).FirstOrDefault();
 
             if (result == default)

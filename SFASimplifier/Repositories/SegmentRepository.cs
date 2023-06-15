@@ -2,6 +2,7 @@
 using NetTopologySuite.Features;
 using NetTopologySuite.Geometries;
 using SFASimplifier.Extensions;
+using SFASimplifier.Factories;
 using SFASimplifier.Models;
 using StringExtensions;
 using System.Collections.Generic;
@@ -18,13 +19,13 @@ namespace SFASimplifier.Repositories
 
         private readonly double distanceNodeToLine;
         private readonly GeometryFactory geometryFactory;
-        private readonly LocationRepository locationFactory;
+        private readonly LocationFactory locationFactory;
 
         #endregion Private Fields
 
         #region Public Constructors
 
-        public SegmentRepository(LocationRepository locationFactory, double distanceNodeToLine)
+        public SegmentRepository(LocationFactory locationFactory, double distanceNodeToLine)
         {
             this.locationFactory = locationFactory;
             this.distanceNodeToLine = distanceNodeToLine;
