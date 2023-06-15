@@ -26,6 +26,12 @@ namespace SFASimplifier.Factories
 
         #endregion Public Constructors
 
+        #region Public Properties
+
+        public IEnumerable<Feature> Points => points.Values;
+
+        #endregion Public Properties
+
         #region Public Methods
 
         public void LoadLines(IEnumerable<Feature> features)

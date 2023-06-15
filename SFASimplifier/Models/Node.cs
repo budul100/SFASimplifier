@@ -11,6 +11,8 @@ namespace SFASimplifier.Models
 
         public double Distance { get; set; }
 
+        public bool IsBorder { get; set; }
+
         public Location Location { get; set; }
 
         public Feature Point { get; set; }

@@ -38,13 +38,14 @@ namespace SFASimplifier.Factories
 
         #region Public Methods
 
-        public Models.Location Get(Feature point, string longName, string shortName, int? number)
+        public Models.Location Get(Feature point, string longName, string shortName, int? number, bool isBorder)
         {
             var result = GetLocation(
                 point: point,
                 longName: longName,
                 shortName: shortName,
-                number: number);
+                number: number,
+                isBorder: isBorder);
 
             return result;
         }
@@ -53,10 +54,10 @@ namespace SFASimplifier.Factories
 
         #region Private Methods
 
-        private Models.Location GetLocation(Feature point, string longName, string shortName, int? number)
+        private Models.Location GetLocation(Feature point, string longName, string shortName, int? number, bool isBorder)
         {
             var result = locations
-                .Where(l => ((longName.IsEmpty() && shortName.IsEmpty() && !number.HasValue)
+                .Where(l => (isBorder
                     || (!l.LongName.IsEmpty() && !longName.IsEmpty() && Fuzz.Ratio(l.LongName, longName) >= fuzzyScore)
                     || (!l.ShortName.IsEmpty() && !shortName.IsEmpty() && l.ShortName == shortName)
                     || (l.Number.HasValue && number.HasValue && l.Number == number))
@@ -67,7 +68,7 @@ namespace SFASimplifier.Factories
             {
                 result = new Models.Location
                 {
-                    IsBorder = true,
+                    IsBorder = isBorder,
                 };
 
                 locations.Add(result);

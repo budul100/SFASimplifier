@@ -30,6 +30,11 @@ namespace SFASimplifier
                     geometryFactory: geometryFactory,
                     angleMin: 1);
 
+                var segmentFactory = new SegmentFactory(
+                    geometryFactory: geometryFactory,
+                    pointFactory: pointFactory,
+                    locationFactory: locationFactory, distanceNodeToLine: 50);
+
                 var featureWriter = new FeatureWriter(
                     linkFactory: linkFactory);
 
@@ -68,16 +73,11 @@ namespace SFASimplifier
                 lineRepository.Load(collectionRepository.Collection);
                 pointFactory.LoadLines(lineRepository.Features);
 
-                var segmentRepository = new SegmentRepository(
-                    locationFactory: locationFactory,
-                    distanceNodeToLine: 50);
-                segmentRepository.Load(
-                    lines: lineRepository.Features,
-                    points: pointRepository.Features);
+                segmentFactory.Load(lineRepository.Features);
 
                 var chainRepository = new ChainRepository(
                     angleMin: 1);
-                chainRepository.Load(segmentRepository.Segments);
+                chainRepository.Load(segmentFactory.Segments);
 
                 linkFactory.Load(
                     chains: chainRepository.Chains);
