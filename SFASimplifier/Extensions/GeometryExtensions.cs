@@ -17,7 +17,7 @@ namespace SFASimplifier.Extensions
         {
             foreach (var point in points)
             {
-                var coordinate = point.Geometry.GetNearest(geometry);
+                var coordinate = geometry.GetNearest(point.Geometry);
                 var distance = point.Geometry.Coordinate.GetDistance(coordinate);
 
                 if (distance <= distanceNodeToLine || point.Attributes?.Count > 0)
@@ -44,7 +44,7 @@ namespace SFASimplifier.Extensions
         {
             var result = DistanceOp.NearestPoints(
                 g0: other,
-                g1: current).First();
+                g1: current).Last();
 
             return result;
         }

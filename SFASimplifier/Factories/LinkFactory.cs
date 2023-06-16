@@ -118,7 +118,7 @@ namespace SFASimplifier.Factories
                 var envelop = new Envelope(relevantCoordinate);
                 var currentGeometry = geometryFactory.ToGeometry(envelop);
 
-                currentCoordinates.UnionWith(otherGeometries.Select(g => currentGeometry.GetNearest(g)));
+                currentCoordinates.UnionWith(otherGeometries.Select(g => g.GetNearest(currentGeometry)));
 
                 if (currentCoordinates.Count > 1)
                 {

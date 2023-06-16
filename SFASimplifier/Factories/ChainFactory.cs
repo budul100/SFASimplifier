@@ -1,5 +1,6 @@
 ﻿using HashExtensions;
 using NetTopologySuite.Geometries;
+using NetTopologySuite.Geometries.Prepared;
 using SFASimplifier.Extensions;
 using SFASimplifier.Models;
 using SFASimplifier.Structs;
@@ -175,20 +176,39 @@ namespace SFASimplifier.Factories
             }
             else
             {
-                result = !chain.Geometry.Coordinates[^1].IsAcuteAngle(
-                    before: chain.Geometry.Coordinates[^2],
-                    after: chain.To.Location.Centroid.Coordinate,
-                    angleMin: angleMin);
+                var geoFactory = new PreparedGeometryFactory();
+                var preparedGeometry = geoFactory.Create(chain.To.Location.Geometry.Envelope);
+
+                var befores = chain.Geometry.Coordinates
+                    .TakeWhile(c => !preparedGeometry.Intersects(geometryFactory.CreatePoint(c)))
+                    .TakeLast(2).ToArray();
+
+                var afters = segment.Geometry.Coordinates.Reverse()
+                    .TakeWhile(c => !preparedGeometry.Intersects(geometryFactory.CreatePoint(c)))
+                    .TakeLast(2).Reverse().ToArray();
+
+                result = true;
+
+                if (befores.Length > 1)
+                {
+                    result &= !befores[^1].IsAcuteAngle(
+                        before: befores[^2],
+                        after: chain.To.Location.Centroid.Coordinate,
+                        angleMin: angleMin);
+                }
 
                 result &= !chain.To.Location.Centroid.Coordinate.IsAcuteAngle(
-                    before: chain.Geometry.Coordinates[^1],
-                    after: segment.Geometry.Coordinates[0],
+                    before: befores[^1],
+                    after: afters[0],
                     angleMin: angleMin);
 
-                result &= !segment.Geometry.Coordinates[0].IsAcuteAngle(
-                    before: chain.To.Location.Centroid.Coordinate,
-                    after: segment.Geometry.Coordinates[1],
-                    angleMin: angleMin);
+                if (afters.Length > 1)
+                {
+                    result &= !afters[0].IsAcuteAngle(
+                        before: chain.To.Location.Centroid.Coordinate,
+                        after: afters[1],
+                        angleMin: angleMin);
+                }
             }
 
             return result;

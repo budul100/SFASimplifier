@@ -43,9 +43,9 @@ namespace SFASimplifier.Factories
                 var name = line.GetAttribute(AttributeLongName);
 
                 if (true
-                || name == "KBS 390 Bremen - Leer - Norddeich(Mole)"
-                || name == "KBS 390 Bremen - Norddeich(Mole)"
-                )
+                || name == "1500 Oldenburg - Bremen"
+                || name == "Bremen-Thedinghauser Eisenbahn"
+                   )
                 {
                     AddWay(
                         line: line,
