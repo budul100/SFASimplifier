@@ -43,9 +43,13 @@ namespace SFASimplifier.Factories
             {
                 var name = line.GetAttribute(AttributeLongName);
 
-                AddWay(
-                    line: line,
-                    name: name);
+                if (name == "2200 Wanne-Eickel - Hamburg"
+                    || name == "1404 Abzw Bremen Gabelung - Sagehorn")
+                {
+                    AddWay(
+                        line: line,
+                        name: name);
+                }
             }
         }
 

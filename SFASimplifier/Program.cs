@@ -20,7 +20,7 @@ namespace SFASimplifier
 
                 var wayFactory = new WayFactory(
                     geometryFactory: geometryFactory,
-                    borderMinLength: 1);
+                    borderMinLength: 0);
 
                 var pointFactory = new PointFactory(
                     geometryFactory: geometryFactory);
@@ -34,7 +34,7 @@ namespace SFASimplifier
                     geometryFactory: geometryFactory,
                     pointFactory: pointFactory,
                     locationFactory: locationFactory,
-                    distanceNodeToLine: 20);
+                    distanceNodeToLine: 30);
 
                 var chainFactory = new ChainFactory(
                     geometryFactory: geometryFactory,

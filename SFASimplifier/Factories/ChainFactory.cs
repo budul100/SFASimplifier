@@ -91,11 +91,11 @@ namespace SFASimplifier.Factories
                 FindChain(
                     given: result,
                     segments: segments,
-                    beforeTo: relevantBeforeTo);
+                    last: relevant);
             }
         }
 
-        private void FindChain(Chain given, IEnumerable<Segment> segments, Coordinate beforeTo)
+        private void FindChain(Chain given, IEnumerable<Segment> segments, Segment last)
         {
             var relevants = segments
                 .Where(s => given.To.Location == s.From.Location
@@ -104,11 +104,8 @@ namespace SFASimplifier.Factories
 
             foreach (var relevant in relevants)
             {
-                var afterFrom = relevant.Geometry.Coordinates.AfterFrom();
-
-                if (!given.To.Coordinate.IsAcuteAngle(
-                    from: beforeTo,
-                    to: afterFrom,
+                if (!last.HasAcuteAngleTo(
+                    right: relevant,
                     angleMin: angleMin))
                 {
                     var result = GetChain(
@@ -122,7 +119,7 @@ namespace SFASimplifier.Factories
                         FindChain(
                             given: result,
                             segments: segments,
-                            beforeTo: relevantBeforeTo);
+                            last: relevant);
                     }
                     else if (result.From.Location != result.To.Location)
                     {
