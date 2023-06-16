@@ -121,7 +121,7 @@ namespace SFASimplifier.Factories
                         && nodeTo?.Location != nodeFrom?.Location)
                     {
                         var coordinates = indexFrom.HasValue
-                            ? allCoordinates[indexFrom.Value..indexTo]
+                            ? allCoordinates[indexFrom.Value..(indexTo + 1)]
                             : default;
 
                         if (nodeFrom != default
@@ -163,7 +163,9 @@ namespace SFASimplifier.Factories
 
             foreach (var pointGroup in pointGroups)
             {
-                var relevants = geometry.FilterNodes(pointGroup).ToArray();
+                var relevants = geometry.FilterNodes(
+                    points: pointGroup,
+                    distanceNodeToLine: distanceNodeToLine).ToArray();
 
                 var longName = pointGroup.GetPrimaryAttribute(AttributeLongName);
                 var shortName = pointGroup.GetPrimaryAttribute(AttributeShortName);
@@ -171,7 +173,7 @@ namespace SFASimplifier.Factories
                 foreach (var relevant in relevants)
                 {
                     relevant.Location = locationFactory.Get(
-                        point: relevant.Point,
+                        feature: relevant.Point,
                         longName: longName,
                         shortName: shortName,
                         number: default,

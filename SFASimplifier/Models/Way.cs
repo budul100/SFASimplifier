@@ -8,9 +8,9 @@ namespace SFASimplifier.Models
     {
         #region Public Properties
 
-        public IEnumerable<Geometry> Geometries { get; set; }
+        public Feature Feature { get; set; }
 
-        public Feature Line { get; set; }
+        public IEnumerable<Geometry> Geometries { get; set; }
 
         public string Name { get; set; }
 

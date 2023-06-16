@@ -36,14 +36,7 @@ namespace SFASimplifier.Extensions
 
         public static double GetDistance(this IEnumerable<Feature> features, Feature feature)
         {
-            var result = features.Min(f => f.GetDistance(feature));
-
-            return result;
-        }
-
-        public static double GetDistance(this Feature first, Feature second)
-        {
-            var result = second.Geometry.Distance(first.Geometry) * 100000;
+            var result = features.Min(f => f.Geometry.Coordinate.GetDistance(feature.Geometry.Coordinate));
 
             return result;
         }

@@ -39,10 +39,11 @@ namespace SFASimplifier.Factories
 
         #region Public Methods
 
-        public Models.Location Get(Feature point, string longName, string shortName, int? number, bool isBorder)
+        public Models.Location Get(Feature feature, string longName, string shortName, int? number,
+            bool isBorder)
         {
             var result = GetLocation(
-                point: point,
+                point: feature,
                 longName: longName,
                 shortName: shortName,
                 number: number,
@@ -64,18 +65,29 @@ namespace SFASimplifier.Factories
             foreach (var locationGroup in locationGroups)
             {
                 var coordinates = locationGroup
-                    .Select(n => n.Point.Geometry.Coordinate)
+                    .Select(n => n.Coordinate)
                     .Distinct().ToArray();
 
-                if (coordinates.Length > 1)
-                {
-                    locationGroup.Key.Geometry = geometryFactory.CreateLineString(
-                        coordinates: coordinates).Boundary.Centroid;
-                }
-                else
+                if (coordinates.Length == 1)
                 {
                     locationGroup.Key.Geometry = geometryFactory.CreatePoint(
                         coordinate: coordinates.Single());
+                    locationGroup.Key.Centroid = locationGroup.Key.Geometry;
+                }
+                else if (coordinates.Length == 2)
+                {
+                    locationGroup.Key.Geometry = geometryFactory.CreateLineString(
+                        coordinates: coordinates);
+                    locationGroup.Key.Centroid = locationGroup.Key.Geometry.Boundary.Centroid;
+                }
+                else
+                {
+                    var ring = coordinates.ToList();
+                    ring.Add(coordinates[0]);
+
+                    locationGroup.Key.Geometry = geometryFactory.CreatePolygon(
+                        coordinates: ring.ToArray());
+                    locationGroup.Key.Centroid = locationGroup.Key.Geometry.Boundary.Centroid;
                 }
             }
         }
@@ -91,8 +103,8 @@ namespace SFASimplifier.Factories
                     || (!l.LongName.IsEmpty() && !longName.IsEmpty() && Fuzz.Ratio(l.LongName, longName) >= fuzzyScore)
                     || (!l.ShortName.IsEmpty() && !shortName.IsEmpty() && l.ShortName == shortName)
                     || (l.Number.HasValue && number.HasValue && l.Number == number))
-                    && l.Points.GetDistance(point) < maxDistance)
-                .OrderBy(l => l.Points.GetDistance(point)).FirstOrDefault();
+                    && l.Features.GetDistance(point) < maxDistance)
+                .OrderBy(l => l.Features.GetDistance(point)).FirstOrDefault();
 
             if (result == default)
             {
@@ -125,7 +137,7 @@ namespace SFASimplifier.Factories
                 result.IsBorder = false;
             }
 
-            result.Points.Add(point);
+            result.Features.Add(point);
 
             return result;
         }

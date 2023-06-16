@@ -42,9 +42,7 @@ namespace SFASimplifier.Factories
         public void Load(IEnumerable<Chain> chains)
         {
             var chainGroups = chains
-                .GroupBy(c => c.From.Location.GetHashCode() < c.To.Location.GetHashCode()
-                    ? (c.From.Location.GetHashCode(), c.To.Location.GetHashCode())
-                    : (c.To.Location.GetHashCode(), c.From.Location.GetHashCode())).ToArray();
+                .GroupBy(c => c.Key).ToArray();
 
             foreach (var chainGroup in chainGroups)
             {
@@ -103,12 +101,12 @@ namespace SFASimplifier.Factories
                 .Where(g => g != relevantGeometry)
                 .DistinctBy(g => g.Coordinates.GetSequenceHash()).ToArray();
 
-            var fromIsFirst = from.Geometry.Coordinate.Distance(relevantGeometry.Coordinates[0]) <
-                to.Geometry.Coordinate.Distance(relevantGeometry.Coordinates[0]);
+            var fromIsFirst = from.Centroid.Coordinate.GetDistance(relevantGeometry.Coordinates[0]) <
+                to.Centroid.Coordinate.GetDistance(relevantGeometry.Coordinates[0]);
 
             yield return fromIsFirst
-                ? from.Geometry.Coordinate
-                : to.Geometry.Coordinate;
+                ? from.Centroid.Coordinate
+                : to.Centroid.Coordinate;
 
             foreach (var relevantCoordinate in relevantGeometry.Coordinates)
             {
@@ -135,8 +133,8 @@ namespace SFASimplifier.Factories
             }
 
             yield return fromIsFirst
-                ? to.Geometry.Coordinate
-                : from.Geometry.Coordinate;
+                ? to.Centroid.Coordinate
+                : from.Centroid.Coordinate;
         }
 
         #endregion Private Methods

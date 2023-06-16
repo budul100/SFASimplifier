@@ -8,6 +8,10 @@ namespace SFASimplifier.Models
     {
         #region Public Properties
 
+        public Geometry Centroid { get; set; }
+
+        public HashSet<Feature> Features { get; } = new HashSet<Feature>();
+
         public Geometry Geometry { get; set; }
 
         public bool IsBorder { get; set; }
@@ -15,8 +19,6 @@ namespace SFASimplifier.Models
         public string LongName { get; set; }
 
         public long? Number { get; set; }
-
-        public HashSet<Feature> Points { get; } = new HashSet<Feature>();
 
         public string ShortName { get; set; }
 

@@ -21,10 +21,9 @@ namespace SFASimplifier.Factories
 
         #region Public Constructors
 
-        public WayFactory(GeometryFactory geometryFactory, int borderMinLength)
+        public WayFactory(GeometryFactory geometryFactory)
         {
             this.geometryFactory = geometryFactory;
-            this.borderMinLength = borderMinLength;
         }
 
         #endregion Public Constructors
@@ -43,8 +42,10 @@ namespace SFASimplifier.Factories
             {
                 var name = line.GetAttribute(AttributeLongName);
 
-                if (name == "2200 Wanne-Eickel - Hamburg"
-                    || name == "1404 Abzw Bremen Gabelung - Sagehorn")
+                if (true
+                || name == "KBS 390 Bremen - Leer - Norddeich(Mole)"
+                || name == "KBS 390 Bremen - Norddeich(Mole)"
+                )
                 {
                     AddWay(
                         line: line,
@@ -65,7 +66,7 @@ namespace SFASimplifier.Factories
             var way = new Way
             {
                 Geometries = geometries,
-                Line = line,
+                Feature = line,
                 Name = name,
             };
 
@@ -87,8 +88,8 @@ namespace SFASimplifier.Factories
                 while (++indexTo < length)
                 {
                     if (geometry.Coordinates[indexTo].IsAcuteAngle(
-                        from: geometry.Coordinates[indexTo - 1],
-                        to: geometry.Coordinates[indexTo + 1]))
+                        before: geometry.Coordinates[indexTo - 1],
+                        after: geometry.Coordinates[indexTo + 1]))
                     {
                         var result = GetGeometry(
                             allCoordinates: allCoordinates,

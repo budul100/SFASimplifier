@@ -19,22 +19,21 @@ namespace SFASimplifier
                 var geometryFactory = new GeometryFactory();
 
                 var wayFactory = new WayFactory(
-                    geometryFactory: geometryFactory,
-                    borderMinLength: 0);
+                    geometryFactory: geometryFactory);
 
                 var pointFactory = new PointFactory(
                     geometryFactory: geometryFactory);
 
                 var locationFactory = new LocationFactory(
                     geometryFactory: geometryFactory,
-                    maxDistance: 300,
+                    maxDistance: 200,
                     fuzzyScore: 80);
 
                 var segmentFactory = new SegmentFactory(
                     geometryFactory: geometryFactory,
                     pointFactory: pointFactory,
                     locationFactory: locationFactory,
-                    distanceNodeToLine: 30);
+                    distanceNodeToLine: 20);
 
                 var chainFactory = new ChainFactory(
                     geometryFactory: geometryFactory,

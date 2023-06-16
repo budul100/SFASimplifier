@@ -57,7 +57,7 @@ namespace SFASimplifier.Writers
             {
                 index++;
 
-                foreach (var name in way.Line.Attributes.GetNames())
+                foreach (var name in way.Feature.Attributes.GetNames())
                 {
                     var key = $"{name} ({index})";
 
@@ -65,7 +65,7 @@ namespace SFASimplifier.Writers
                     {
                         table.Add(
                             key: key,
-                            value: way.Line.Attributes[name]);
+                            value: way.Feature.Attributes[name]);
                     }
                 }
             }
@@ -83,7 +83,7 @@ namespace SFASimplifier.Writers
         {
             var table = new Dictionary<string, object>();
 
-            foreach (var point in location.Points)
+            foreach (var point in location.Features)
             {
                 if (point.Attributes?.Count > 0)
                 {
@@ -102,7 +102,7 @@ namespace SFASimplifier.Writers
             var attributeTable = new AttributesTable(table);
 
             var result = new Feature(
-                geometry: location.Geometry,
+                geometry: location.Centroid,
                 attributes: attributeTable);
 
             return result;

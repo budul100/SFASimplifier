@@ -12,17 +12,18 @@ namespace SFASimplifier.Extensions
     {
         #region Public Methods
 
-        public static IEnumerable<Node> FilterNodes(this Geometry geometry, IEnumerable<Feature> points)
+        public static IEnumerable<Node> FilterNodes(this Geometry geometry, IEnumerable<Feature> points,
+            double distanceNodeToLine)
         {
             foreach (var point in points)
             {
-                var coordinate = geometry.GetNearest(point.Geometry);
-                var distance = coordinate.Distance(point.Geometry.Coordinate);
+                var coordinate = point.Geometry.GetNearest(geometry);
+                var distance = point.Geometry.Coordinate.GetDistance(coordinate);
 
-                if (distance == 0 || point.Attributes?.Count > 0)
+                if (distance <= distanceNodeToLine || point.Attributes?.Count > 0)
                 {
                     var position = geometry.GetPosition(coordinate);
-                    var isBorder = distance == 0
+                    var isBorder = distance <= distanceNodeToLine
                         && !(point.Attributes?.Count > 0);
 
                     var result = new Node
