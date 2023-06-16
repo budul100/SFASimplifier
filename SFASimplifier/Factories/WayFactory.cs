@@ -78,7 +78,7 @@ namespace SFASimplifier.Factories
 
                 var indexFrom = 0;
                 var indexTo = borderMinLength;
-                var length = geometry.Coordinates.Length - 1 - borderMinLength;
+                var length = allCoordinates.Length - 1 - borderMinLength;
 
                 while (++indexTo < length)
                 {
@@ -103,7 +103,7 @@ namespace SFASimplifier.Factories
                 var resultFinal = GetGeometry(
                     allCoordinates: allCoordinates,
                     indexFrom: indexFrom,
-                    indexTo: geometry.Coordinates.Length);
+                    indexTo: allCoordinates.Length - 1);
 
                 if (resultFinal != default)
                 {
@@ -118,7 +118,7 @@ namespace SFASimplifier.Factories
 
             if (indexTo > indexFrom + 1)
             {
-                var coordinates = allCoordinates[indexFrom..indexTo];
+                var coordinates = allCoordinates[indexFrom..(indexTo + 1)];
                 result = geometryFactory.CreateLineString(coordinates);
             }
 
