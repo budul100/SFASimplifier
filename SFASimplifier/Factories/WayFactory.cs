@@ -11,8 +11,6 @@ namespace SFASimplifier.Factories
     {
         #region Private Fields
 
-        private const string AttributeLongName = "name";
-
         private readonly int borderMinLength;
         private readonly GeometryFactory geometryFactory;
         private readonly HashSet<Way> ways = new();
@@ -40,11 +38,7 @@ namespace SFASimplifier.Factories
         {
             foreach (var line in lines)
             {
-                var name = line.GetAttribute(AttributeLongName);
-
-                AddWay(
-                    line: line,
-                    name: name);
+                AddWay(line);
             }
         }
 
@@ -52,7 +46,7 @@ namespace SFASimplifier.Factories
 
         #region Private Methods
 
-        private void AddWay(Feature line, string name)
+        private void AddWay(Feature line)
         {
             var geometries = GetGeometries(
                 line: line).ToArray();
@@ -61,7 +55,6 @@ namespace SFASimplifier.Factories
             {
                 Geometries = geometries,
                 Feature = line,
-                Name = name,
             };
 
             ways.Add(way);

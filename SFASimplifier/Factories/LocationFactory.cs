@@ -1,5 +1,4 @@
-﻿using FuzzySharp;
-using NetTopologySuite.Features;
+﻿using NetTopologySuite.Features;
 using NetTopologySuite.Geometries;
 using SFASimplifier.Extensions;
 using SFASimplifier.Models;
@@ -13,7 +12,6 @@ namespace SFASimplifier.Factories
     {
         #region Private Fields
 
-        private readonly double fuzzyScore;
         private readonly GeometryFactory geometryFactory;
         private readonly HashSet<Models.Location> locations = new();
         private readonly double maxDistance;
@@ -26,28 +24,25 @@ namespace SFASimplifier.Factories
         {
             this.geometryFactory = geometryFactory;
             this.maxDistance = maxDistance;
-            this.fuzzyScore = fuzzyScore;
         }
 
         #endregion Public Constructors
 
         #region Public Properties
 
-        public IEnumerable<Models.Location> Locations => locations;
+        public IEnumerable<Models.Location> Locations => locations
+            .OrderBy(l => l.Key?.ToString()).ToArray();
 
         #endregion Public Properties
 
         #region Public Methods
 
-        public Models.Location Get(Feature feature, string longName, string shortName, int? number,
-            bool isBorder)
+        public Models.Location Get(Feature feature, bool isBorder, string key)
         {
             var result = GetLocation(
-                point: feature,
-                longName: longName,
-                shortName: shortName,
-                number: number,
-                isBorder: isBorder);
+                feature: feature,
+                isBorder: isBorder,
+                key: key);
 
             return result;
         }
@@ -96,15 +91,12 @@ namespace SFASimplifier.Factories
 
         #region Private Methods
 
-        private Models.Location GetLocation(Feature point, string longName, string shortName, int? number, bool isBorder)
+        private Models.Location GetLocation(Feature feature, bool isBorder, string key)
         {
             var result = locations
-                .Where(l => (isBorder
-                    || (!l.LongName.IsEmpty() && !longName.IsEmpty() && Fuzz.Ratio(l.LongName, longName) >= fuzzyScore)
-                    || (!l.ShortName.IsEmpty() && !shortName.IsEmpty() && l.ShortName == shortName)
-                    || (l.Number.HasValue && number.HasValue && l.Number == number))
-                    && l.Features.GetDistance(point) < maxDistance)
-                .OrderBy(l => l.Features.GetDistance(point)).FirstOrDefault();
+                .Where(l => (isBorder || key.IsEmpty() || key == l.Key)
+                    && l.Features.GetDistance(feature) < maxDistance)
+                .OrderBy(l => l.Features.GetDistance(feature)).FirstOrDefault();
 
             if (result == default)
             {
@@ -116,28 +108,14 @@ namespace SFASimplifier.Factories
                 locations.Add(result);
             }
 
-            if (result.LongName.IsEmpty()
-                && !longName.IsEmpty())
+            if (!key.IsEmpty()
+                && result.Key.IsEmpty())
             {
-                result.LongName = longName;
+                result.Key = key;
                 result.IsBorder = false;
             }
 
-            if (result.ShortName.IsEmpty()
-                && !shortName.IsEmpty())
-            {
-                result.ShortName = shortName;
-                result.IsBorder = false;
-            }
-
-            if (!result.Number.HasValue
-                && number.HasValue)
-            {
-                result.Number = number;
-                result.IsBorder = false;
-            }
-
-            result.Features.Add(point);
+            result.Features.Add(feature);
 
             return result;
         }

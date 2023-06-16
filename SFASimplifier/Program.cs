@@ -33,6 +33,7 @@ namespace SFASimplifier
                     geometryFactory: geometryFactory,
                     pointFactory: pointFactory,
                     locationFactory: locationFactory,
+                    keyAttribute: "name",
                     distanceNodeToLine: 20);
 
                 var chainFactory = new ChainFactory(
@@ -45,14 +46,20 @@ namespace SFASimplifier
                     detourMax: 1.1);
 
                 var featureWriter = new FeatureWriter(
-                    linkFactory: linkFactory);
+                    geometryFactory: geometryFactory,
+                    wayFactory: wayFactory);
 
                 var pointTypes = new OgcGeometryType[]
                 {
                     OgcGeometryType.Point,
                 };
 
-                var pointAttributes = new (string, string)[]
+                var pointAttributesCheck = new (string, string)[]
+                {
+                    ("name", ".+"),
+                };
+
+                var pointAttributesFilter = new (string, string)[]
                 {
                     ("public_transport", "stop_position"),
                     ("public_transport", "station"),
@@ -61,10 +68,9 @@ namespace SFASimplifier
 
                 var pointRepository = new FeatureRepository(
                     types: pointTypes,
-                    attributes: pointAttributes);
+                    checkAttributes: pointAttributesCheck,
+                    filterAttributes: pointAttributesFilter);
                 pointRepository.Load(collectionRepository.Collection);
-
-                pointFactory.LoadPoints(pointRepository.Features);
 
                 var lineTypes = new OgcGeometryType[]
                 {
@@ -72,17 +78,25 @@ namespace SFASimplifier
                     OgcGeometryType.MultiLineString,
                 };
 
-                var lineAttributes = new (string, string)[]
+                var lineAttributesCheck = new (string, string)[]
+                {
+                    ("name", ".+"),
+                };
+
+                var lineAttributesFilter = new (string, string)[]
                 {
                     ("type", "route"),
                 };
 
                 var lineRepository = new FeatureRepository(
                     types: lineTypes,
-                    attributes: lineAttributes);
+                    checkAttributes: lineAttributesCheck,
+                    filterAttributes: lineAttributesFilter);
                 lineRepository.Load(collectionRepository.Collection);
 
                 wayFactory.Load(lineRepository.Features);
+
+                pointFactory.LoadPoints(pointRepository.Features);
                 pointFactory.LoadWays(wayFactory.Ways);
 
                 segmentFactory.Load(wayFactory.Ways);

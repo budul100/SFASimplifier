@@ -10,17 +10,13 @@ namespace SFASimplifier.Models
 
         public Geometry Centroid { get; set; }
 
-        public HashSet<Feature> Features { get; } = new HashSet<Feature>();
+        public HashSet<Feature> Features { get; } = new();
 
         public Geometry Geometry { get; set; }
 
         public bool IsBorder { get; set; }
 
-        public string LongName { get; set; }
-
-        public long? Number { get; set; }
-
-        public string ShortName { get; set; }
+        public string Key { get; set; }
 
         #endregion Public Properties
     }

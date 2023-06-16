@@ -76,19 +76,24 @@ namespace SFASimplifier.Factories
             var lineString = geometryFactory
                 .CreateLineString(coordinates);
 
-            var ways = chains
-                .SelectMany(c => c.Segments.SelectMany(s => s.Ways))
-                .Distinct().ToArray();
-
             var link = new Link
             {
                 From = from,
                 Geometry = lineString,
                 To = to,
-                Ways = ways,
             };
 
             links.Add(link);
+
+            var ways = chains
+                .SelectMany(c => c.Segments)
+                .SelectMany(s => s.Ways)
+                .Distinct().ToArray();
+
+            foreach (var way in ways)
+            {
+                way.Links.Add(link);
+            }
         }
 
         private IEnumerable<Coordinate> GetCoordinates(Models.Location from, Models.Location to,

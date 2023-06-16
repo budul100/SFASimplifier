@@ -28,8 +28,13 @@ namespace SFASimplifier.Extensions
 
         public static string GetAttribute(this Feature feature, string attributeName)
         {
-            var result = feature.Attributes?
-                .GetOptionalValue(attributeName)?.ToString();
+            var result = default(string);
+
+            if (!attributeName.IsEmpty())
+            {
+                result = feature.Attributes?
+                    .GetOptionalValue(attributeName)?.ToString();
+            }
 
             return result;
         }

@@ -1,8 +1,10 @@
 ﻿using NetTopologySuite.Features;
 using NetTopologySuite.Geometries;
+using SFASimplifier.Extensions;
 using StringExtensions;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace SFASimplifier.Repositories
 {
@@ -10,19 +12,20 @@ namespace SFASimplifier.Repositories
     {
         #region Private Fields
 
-        private const string AttributeName = "name";
-
-        private readonly IEnumerable<(string, string)> attributes;
+        private readonly IEnumerable<(string, string)> attributesCheck;
+        private readonly IEnumerable<(string, string)> attributesFilter;
         private readonly IEnumerable<OgcGeometryType> types;
 
         #endregion Private Fields
 
         #region Public Constructors
 
-        public FeatureRepository(IEnumerable<OgcGeometryType> types, IEnumerable<(string, string)> attributes)
+        public FeatureRepository(IEnumerable<OgcGeometryType> types, IEnumerable<(string, string)> checkAttributes,
+            IEnumerable<(string, string)> filterAttributes)
         {
             this.types = types;
-            this.attributes = attributes;
+            this.attributesCheck = checkAttributes;
+            this.attributesFilter = filterAttributes;
         }
 
         #endregion Public Constructors
@@ -47,16 +50,44 @@ namespace SFASimplifier.Repositories
         private IEnumerable<Feature> GetFeatures(IEnumerable<Feature> collection)
         {
             var relevants = collection
-                .Where(f => types.Contains(f.Geometry.OgcGeometryType)
-                    && f.Attributes?.GetOptionalValue(AttributeName)?.ToString()?.IsEmpty() == false).ToArray();
+                .Where(f => types.Contains(f.Geometry.OgcGeometryType)).ToArray();
 
             foreach (var relevant in relevants)
             {
-                foreach (var attribute in attributes)
+                var isValid = false;
+
+                foreach (var attributeCheck in attributesCheck)
                 {
-                    if (relevant.Attributes?.GetOptionalValue(attribute.Item1)?.ToString() == attribute.Item2)
+                    var input = relevant.GetAttribute(attributeCheck.Item1);
+
+                    if (!input.IsEmpty()
+                        && Regex.IsMatch(
+                            input: input,
+                            pattern: attributeCheck.Item2))
                     {
-                        yield return relevant;
+                        isValid = true;
+                    }
+                    else
+                    {
+                        isValid = false;
+                        break;
+                    }
+                }
+
+                if (isValid)
+                {
+                    foreach (var attributeFilter in attributesFilter)
+                    {
+                        var input = relevant.GetAttribute(attributeFilter.Item1);
+
+                        if (!input.IsEmpty()
+                            && Regex.IsMatch(
+                                input: input,
+                                pattern: attributeFilter.Item2))
+                        {
+                            yield return relevant;
+                            break;
+                        }
                     }
                 }
             }

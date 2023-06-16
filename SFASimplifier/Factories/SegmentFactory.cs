@@ -12,11 +12,9 @@ namespace SFASimplifier.Factories
     {
         #region Private Fields
 
-        private const string AttributeLongName = "name";
-        private const string AttributeShortName = "railway:ref";
-
         private readonly double distanceNodeToLine;
         private readonly GeometryFactory geometryFactory;
+        private readonly string keyAttribute;
         private readonly LocationFactory locationFactory;
         private readonly PointFactory pointFactory;
         private readonly Dictionary<int, Segment> segments = new();
@@ -26,11 +24,12 @@ namespace SFASimplifier.Factories
         #region Public Constructors
 
         public SegmentFactory(GeometryFactory geometryFactory, PointFactory pointFactory,
-            LocationFactory locationFactory, double distanceNodeToLine)
+            LocationFactory locationFactory, string keyAttribute, double distanceNodeToLine)
         {
             this.geometryFactory = geometryFactory;
             this.pointFactory = pointFactory;
             this.locationFactory = locationFactory;
+            this.keyAttribute = keyAttribute;
             this.distanceNodeToLine = distanceNodeToLine;
         }
 
@@ -39,8 +38,8 @@ namespace SFASimplifier.Factories
         #region Public Properties
 
         public IEnumerable<Segment> Segments => segments.Values
-            .OrderBy(s => s.From.Location.LongName)
-            .ThenBy(s => s.To.Location.LongName).ToArray();
+            .OrderBy(s => s.From.Location.Key?.ToString())
+            .ThenBy(s => s.To.Location.Key?.ToString()).ToArray();
 
         #endregion Public Properties
 
@@ -159,7 +158,7 @@ namespace SFASimplifier.Factories
             var pointGroups = pointFactory.Points.GetAround(
                 geometry: geometry,
                 meters: distanceNodeToLine)
-                .GroupBy(p => p.GetAttribute(AttributeLongName) ?? p.GetHashCode().ToString()).ToArray();
+                .GroupBy(p => p.GetAttribute(keyAttribute) ?? p.GetHashCode().ToString()).ToArray();
 
             foreach (var pointGroup in pointGroups)
             {
@@ -167,17 +166,14 @@ namespace SFASimplifier.Factories
                     points: pointGroup,
                     distanceNodeToLine: distanceNodeToLine).ToArray();
 
-                var longName = pointGroup.GetPrimaryAttribute(AttributeLongName);
-                var shortName = pointGroup.GetPrimaryAttribute(AttributeShortName);
+                var key = pointGroup.GetPrimaryAttribute(keyAttribute);
 
                 foreach (var relevant in relevants)
                 {
                     relevant.Location = locationFactory.Get(
                         feature: relevant.Point,
-                        longName: longName,
-                        shortName: shortName,
-                        number: default,
-                        isBorder: relevant.IsBorder);
+                        isBorder: relevant.IsBorder,
+                        key: key);
 
                     yield return relevant;
                 }

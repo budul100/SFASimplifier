@@ -1,8 +1,11 @@
 ﻿using NetTopologySuite.Features;
+using NetTopologySuite.Geometries;
 using NetTopologySuite.IO;
 using Newtonsoft.Json;
+using SFASimplifier.Extensions;
 using SFASimplifier.Factories;
 using SFASimplifier.Models;
+using StringExtensions;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -14,15 +17,17 @@ namespace SFASimplifier.Writers
         #region Private Fields
 
         private readonly FeatureCollection featureCollection = new();
-        private readonly LinkFactory linkFactory;
+        private readonly GeometryFactory geometryFactory;
+        private readonly WayFactory wayFactory;
 
         #endregion Private Fields
 
         #region Public Constructors
 
-        public FeatureWriter(LinkFactory linkFactory)
+        public FeatureWriter(GeometryFactory geometryFactory, WayFactory wayFactory)
         {
-            this.linkFactory = linkFactory;
+            this.geometryFactory = geometryFactory;
+            this.wayFactory = wayFactory;
         }
 
         #endregion Public Constructors
@@ -32,7 +37,7 @@ namespace SFASimplifier.Writers
         public void Write(string path)
         {
             LoadLocations();
-            LoadLinks();
+            LoadWays();
 
             var serializer = GeoJsonSerializer.Create();
             using var streamWriter = new StreamWriter(path);
@@ -47,54 +52,36 @@ namespace SFASimplifier.Writers
 
         #region Private Methods
 
-        private static Feature GetFeature(Link link)
+        private static Feature GetFeature(Models.Location location)
         {
             var table = new Dictionary<string, object>();
 
-            var index = 0;
+            var names = location.Features
+                .Where(f => f.Attributes?.Count > 1)
+                .Select(f => f.Attributes)
+                .SelectMany(a => a.GetNames())
+                .Distinct().OrderBy(n => n).ToArray();
 
-            foreach (var way in link.Ways)
+            foreach (var name in names)
             {
-                index++;
+                var values = location.Features
+                    .Select(f => f.GetAttribute(name))
+                    .Where(a => !a.IsEmpty())
+                    .Distinct().OrderBy(n => n).ToArray();
 
-                foreach (var name in way.Feature.Attributes.GetNames())
+                var index = 0;
+
+                foreach (var value in values)
                 {
-                    var key = $"{name} ({index})";
+                    var key = values.Length > 1
+                        ? $"{name} ({++index})"
+                        : name;
 
                     if (!table.ContainsKey(key))
                     {
                         table.Add(
                             key: key,
-                            value: way.Feature.Attributes[name]);
-                    }
-                }
-            }
-
-            var attributeTable = new AttributesTable(table);
-
-            var result = new Feature(
-                geometry: link.Geometry,
-                attributes: attributeTable);
-
-            return result;
-        }
-
-        private static Feature GetFeature(Location location)
-        {
-            var table = new Dictionary<string, object>();
-
-            foreach (var point in location.Features)
-            {
-                if (point.Attributes?.Count > 0)
-                {
-                    foreach (var name in point.Attributes.GetNames())
-                    {
-                        if (!table.ContainsKey(name))
-                        {
-                            table.Add(
-                                key: name,
-                                value: point.Attributes[name]);
-                        }
+                            value: value);
                     }
                 }
             }
@@ -108,35 +95,56 @@ namespace SFASimplifier.Writers
             return result;
         }
 
-        private void LoadLinks()
+        private Feature GetFeature(Way way)
         {
-            var ordereds = linkFactory.Links
-                .OrderBy(s => s.From?.LongName)
-                .ThenBy(s => s.To?.LongName).ToArray();
+            Geometry geometry;
 
-            foreach (var ordered in ordereds)
+            var geometries = way.Links
+                .Select(l => l.Geometry).ToArray();
+
+            if (geometries.Length > 1)
             {
-                var feature = GetFeature(ordered);
+                var lineStrings = geometries.OfType<LineString>().ToArray();
+                geometry = geometryFactory.CreateMultiLineString(lineStrings);
+            }
+            else
+            {
+                geometry = geometries.Single();
+            }
+
+            var result = new Feature(
+                geometry: geometry,
+                attributes: way.Feature.Attributes);
+
+            return result;
+        }
+
+        private void LoadLocations()
+        {
+            var links = wayFactory.Ways
+                .SelectMany(w => w.Links)
+                .Distinct().ToArray();
+
+            var relevants = links.Select(l => l.From)
+                .Union(links.Select(l => l.To))
+                .OrderBy(l => l.Key?.ToString()).ToArray();
+
+            foreach (var relevant in relevants)
+            {
+                var feature = GetFeature(relevant);
 
                 featureCollection.Add(feature);
             }
         }
 
-        private void LoadLocations()
+        private void LoadWays()
         {
-            var froms = linkFactory.Links
-                .Select(l => l.From).ToArray();
-            var tos = linkFactory.Links
-                .Select(l => l.To).ToArray();
+            var relevants = wayFactory.Ways
+                .Where(w => w.Links?.Any() == true).ToArray();
 
-            var ordereds = froms.Union(tos)
-                .OrderBy(l => l.LongName)
-                .ThenBy(l => l.ShortName)
-                .ThenBy(l => l.Number).ToArray();
-
-            foreach (var ordered in ordereds)
+            foreach (var relevant in relevants)
             {
-                var feature = GetFeature(ordered);
+                var feature = GetFeature(relevant);
 
                 featureCollection.Add(feature);
             }
