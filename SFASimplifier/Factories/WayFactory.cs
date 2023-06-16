@@ -1,5 +1,4 @@
-﻿using NetTopologySuite.Algorithm;
-using NetTopologySuite.Features;
+﻿using NetTopologySuite.Features;
 using NetTopologySuite.Geometries;
 using SFASimplifier.Extensions;
 using SFASimplifier.Models;
@@ -85,8 +84,7 @@ namespace SFASimplifier.Factories
                 {
                     if (geometry.Coordinates[indexTo].IsAcuteAngle(
                         from: geometry.Coordinates[indexTo - 1],
-                        to: geometry.Coordinates[indexTo + 1],
-                        angleMin: AngleUtility.PiOver4))
+                        to: geometry.Coordinates[indexTo + 1]))
                     {
                         var result = GetGeometry(
                             allCoordinates: allCoordinates,

@@ -33,15 +33,16 @@ namespace SFASimplifier
                 var segmentFactory = new SegmentFactory(
                     geometryFactory: geometryFactory,
                     pointFactory: pointFactory,
-                    locationFactory: locationFactory, distanceNodeToLine: 50);
+                    locationFactory: locationFactory,
+                    distanceNodeToLine: 20);
 
                 var chainFactory = new ChainFactory(
                     geometryFactory: geometryFactory,
-                    angleMin: 2);
+                    angleMin: 2.5);
 
                 var linkFactory = new LinkFactory(
                     geometryFactory: geometryFactory,
-                    angleMin: 2,
+                    angleMin: 2.5,
                     detourMax: 1.1);
 
                 var featureWriter = new FeatureWriter(
