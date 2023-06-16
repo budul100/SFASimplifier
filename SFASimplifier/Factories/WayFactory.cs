@@ -42,15 +42,9 @@ namespace SFASimplifier.Factories
             {
                 var name = line.GetAttribute(AttributeLongName);
 
-                if (true
-                || name == "1500 Oldenburg - Bremen"
-                || name == "Bremen-Thedinghauser Eisenbahn"
-                   )
-                {
-                    AddWay(
-                        line: line,
-                        name: name);
-                }
+                AddWay(
+                    line: line,
+                    name: name);
             }
         }
 

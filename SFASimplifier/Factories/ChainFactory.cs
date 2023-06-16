@@ -197,10 +197,14 @@ namespace SFASimplifier.Factories
                         angleMin: angleMin);
                 }
 
-                result &= !chain.To.Location.Centroid.Coordinate.IsAcuteAngle(
-                    before: befores[^1],
-                    after: afters[0],
-                    angleMin: angleMin);
+                if (befores.Length > 0
+                    && afters.Length > 0)
+                {
+                    result &= !chain.To.Location.Centroid.Coordinate.IsAcuteAngle(
+                        before: befores[^1],
+                        after: afters[0],
+                        angleMin: angleMin);
+                }
 
                 if (afters.Length > 1)
                 {
