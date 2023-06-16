@@ -1,4 +1,5 @@
-﻿using NetTopologySuite.Features;
+﻿using FuzzySharp;
+using NetTopologySuite.Features;
 using NetTopologySuite.Geometries;
 using SFASimplifier.Extensions;
 using SFASimplifier.Models;
@@ -12,6 +13,7 @@ namespace SFASimplifier.Factories
     {
         #region Private Fields
 
+        private readonly double fuzzyScore;
         private readonly GeometryFactory geometryFactory;
         private readonly HashSet<Models.Location> locations = new();
         private readonly double maxDistance;
@@ -24,6 +26,7 @@ namespace SFASimplifier.Factories
         {
             this.geometryFactory = geometryFactory;
             this.maxDistance = maxDistance;
+            this.fuzzyScore = fuzzyScore;
         }
 
         #endregion Public Constructors
@@ -94,7 +97,7 @@ namespace SFASimplifier.Factories
         private Models.Location GetLocation(Feature feature, bool isBorder, string key)
         {
             var result = locations
-                .Where(l => (isBorder || key.IsEmpty() || key == l.Key)
+                .Where(l => (isBorder || key.IsEmpty() || l.Key.IsEmpty() || Fuzz.Ratio(key, l.Key) >= fuzzyScore)
                     && l.Features.GetDistance(feature) < maxDistance)
                 .OrderBy(l => l.Features.GetDistance(feature)).FirstOrDefault();
 
