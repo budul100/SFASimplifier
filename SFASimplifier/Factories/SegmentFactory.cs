@@ -38,7 +38,9 @@ namespace SFASimplifier.Factories
 
         #region Public Properties
 
-        public IEnumerable<Segment> Segments => segments.Values;
+        public IEnumerable<Segment> Segments => segments.Values
+            .OrderBy(s => s.From.Location.LongName)
+            .ThenBy(s => s.To.Location.LongName).ToArray();
 
         #endregion Public Properties
 
@@ -118,20 +120,20 @@ namespace SFASimplifier.Factories
                     if (nodeTo != default
                         && nodeTo?.Location != nodeFrom?.Location)
                     {
-                        var coordinatesOnward = indexFrom.HasValue
+                        var coordinates = indexFrom.HasValue
                             ? allCoordinates[indexFrom.Value..indexTo]
                             : default;
 
                         if (nodeFrom != default
-                            && coordinatesOnward?.Length > 1)
+                            && coordinates?.Length > 1)
                         {
                             AddSegment(
                                 way: way,
                                 nodeFrom: nodeFrom,
                                 nodeTo: nodeTo,
-                                coordinates: coordinatesOnward);
+                                coordinates: coordinates);
 
-                            var coordinatesBackward = coordinatesOnward
+                            var coordinatesBackward = coordinates
                                 .Reverse().ToArray();
 
                             AddSegment(
@@ -139,10 +141,11 @@ namespace SFASimplifier.Factories
                                 nodeFrom: nodeTo,
                                 nodeTo: nodeFrom,
                                 coordinates: coordinatesBackward);
+
+                            indexFrom = default;
                         }
 
                         nodeFrom = nodeTo;
-                        indexFrom = default;
                     }
                 }
 

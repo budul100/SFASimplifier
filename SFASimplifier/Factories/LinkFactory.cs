@@ -48,7 +48,7 @@ namespace SFASimplifier.Factories
 
             foreach (var chainGroup in chainGroups)
             {
-                AddLinks(chainGroup);
+                AddLink(chainGroup);
             }
         }
 
@@ -56,7 +56,7 @@ namespace SFASimplifier.Factories
 
         #region Private Methods
 
-        private void AddLinks(IEnumerable<Chain> chains)
+        private void AddLink(IEnumerable<Chain> chains)
         {
             var from = chains.First().From.Location;
             var to = chains.First().To.Location;

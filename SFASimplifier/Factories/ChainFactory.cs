@@ -29,7 +29,9 @@ namespace SFASimplifier.Factories
 
         #region Public Properties
 
-        public IEnumerable<Chain> Chains => chains.Values;
+        public IEnumerable<Chain> Chains => chains.Values
+            .OrderBy(s => s.From.Location.LongName)
+            .ThenBy(s => s.To.Location.LongName).ToArray();
 
         #endregion Public Properties
 

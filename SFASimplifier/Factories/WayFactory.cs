@@ -44,12 +44,9 @@ namespace SFASimplifier.Factories
             {
                 var name = line.GetAttribute(AttributeLongName);
 
-                if (name == "30: Székesfehérvár–Murakeresztúr")
-                {
-                    AddWay(
-                        line: line,
-                        name: name);
-                }
+                AddWay(
+                    line: line,
+                    name: name);
             }
         }
 
