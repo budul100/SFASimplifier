@@ -63,7 +63,9 @@ namespace SFASimplifier
                 {
                     ("public_transport", "stop_position"),
                     ("public_transport", "station"),
+                    ("railway", "halt"),
                     ("railway", "station"),
+                    ("railway", "stop"),
                 };
 
                 var pointRepository = new FeatureRepository(
@@ -81,6 +83,7 @@ namespace SFASimplifier
                 var lineAttributesCheck = new (string, string)[]
                 {
                     ("name", ".+"),
+                    ("description", ".+"),
                 };
 
                 var lineAttributesFilter = new (string, string)[]

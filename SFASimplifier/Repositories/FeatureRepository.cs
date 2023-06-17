@@ -56,38 +56,54 @@ namespace SFASimplifier.Repositories
             {
                 var isValid = false;
 
-                foreach (var attributeCheck in attributesCheck)
+                if (attributesCheck?.Any() == true)
                 {
-                    var input = relevant.GetAttribute(attributeCheck.Item1);
+                    foreach (var attributeCheck in attributesCheck)
+                    {
+                        var input = relevant.GetAttribute(attributeCheck.Item1);
 
-                    if (!input.IsEmpty()
-                        && Regex.IsMatch(
-                            input: input,
-                            pattern: attributeCheck.Item2))
-                    {
-                        isValid = true;
+                        if (!input.IsEmpty())
+                        {
+                            if (Regex.IsMatch(
+                                input: input,
+                                pattern: attributeCheck.Item2))
+                            {
+                                isValid = true;
+                            }
+                            else
+                            {
+                                isValid = false;
+                                break;
+                            }
+                        }
                     }
-                    else
-                    {
-                        isValid = false;
-                        break;
-                    }
+                }
+                else
+                {
+                    isValid = true;
                 }
 
                 if (isValid)
                 {
-                    foreach (var attributeFilter in attributesFilter)
+                    if (attributesFilter?.Any() == true)
                     {
-                        var input = relevant.GetAttribute(attributeFilter.Item1);
-
-                        if (!input.IsEmpty()
-                            && Regex.IsMatch(
-                                input: input,
-                                pattern: attributeFilter.Item2))
+                        foreach (var attributeFilter in attributesFilter)
                         {
-                            yield return relevant;
-                            break;
+                            var input = relevant.GetAttribute(attributeFilter.Item1);
+
+                            if (!input.IsEmpty()
+                                && Regex.IsMatch(
+                                    input: input,
+                                    pattern: attributeFilter.Item2))
+                            {
+                                yield return relevant;
+                                break;
+                            }
                         }
+                    }
+                    else
+                    {
+                        yield return relevant;
                     }
                 }
             }
