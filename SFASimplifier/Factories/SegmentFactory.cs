@@ -123,8 +123,18 @@ namespace SFASimplifier.Factories
                             ? allCoordinates[indexFrom.Value..(indexTo + 1)]
                             : default;
 
-                        if (nodeFrom != default
-                            && coordinates?.Length > 1)
+                        if (!(coordinates?.Length > 1)
+                            && nodeFrom?.Coordinate != default
+                            && nodeTo?.Coordinate != default)
+                        {
+                            coordinates = new Coordinate[]
+                            {
+                                nodeFrom.Coordinate,
+                                nodeTo.Coordinate
+                            };
+                        }
+
+                        if (nodeFrom != default)
                         {
                             AddSegment(
                                 way: way,
