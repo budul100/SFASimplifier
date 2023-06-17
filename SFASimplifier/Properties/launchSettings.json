@@ -1,5 +1,9 @@
 {
   "profiles": {
+    "Convert Brandenburg / Berlin": {
+      "commandName": "Project",
+      "commandLineArgs": "\"..\\..\\..\\..\\Additionals\\Samples\\Brandenburg-Berlin.geojson\" \"..\\..\\..\\..\\Additionals\\Samples\\Brandenburg-Berlin_.geojson\""
+    },
     "Convert Bremen": {
       "commandName": "Project",
       "commandLineArgs": "\"..\\..\\..\\..\\Additionals\\Samples\\Bremen.geojson\" \"..\\..\\..\\..\\Additionals\\Samples\\Bremen_.geojson\""
