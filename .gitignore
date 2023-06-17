@@ -398,3 +398,8 @@ FodyWeavers.xsd
 *.sln.iml
 /Additionals/Samples/Bremen-Komplett_.geojson
 /Additionals/Samples/Ungarn-Komplett_.geojson
+/Additionals/Samples/Turkey_.geojson
+/Additionals/Samples/Slovakia_.geojson
+/Additionals/Samples/Romania_.geojson
+/Additionals/Samples/Hungary_.geojson
+/Additionals/Samples/Bremen_.geojson

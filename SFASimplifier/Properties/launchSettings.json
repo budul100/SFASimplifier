@@ -2,11 +2,23 @@
   "profiles": {
     "Convert Bremen": {
       "commandName": "Project",
-      "commandLineArgs": "\"..\\..\\..\\..\\Additionals\\Samples\\Bremen-Komplett.geojson\" \"..\\..\\..\\..\\Additionals\\Samples\\Bremen-Komplett_.geojson\""
+      "commandLineArgs": "\"..\\..\\..\\..\\Additionals\\Samples\\Bremen.geojson\" \"..\\..\\..\\..\\Additionals\\Samples\\Bremen_.geojson\""
     },
-    "Convert Ungarn": {
+    "Convert Hungary": {
       "commandName": "Project",
-      "commandLineArgs": "\"..\\..\\..\\..\\Additionals\\Samples\\Ungarn-Komplett.geojson\" \"..\\..\\..\\..\\Additionals\\Samples\\Ungarn-Komplett_.geojson\""
+      "commandLineArgs": "\"..\\..\\..\\..\\Additionals\\Samples\\Hungary.geojson\" \"..\\..\\..\\..\\Additionals\\Samples\\Hungary_.geojson\""
+    },
+    "Convert Romania": {
+      "commandName": "Project",
+      "commandLineArgs": "\"..\\..\\..\\..\\Additionals\\Samples\\Romania.geojson\" \"..\\..\\..\\..\\Additionals\\Samples\\Romania_.geojson\""
+    },
+    "Convert Slovakia": {
+      "commandName": "Project",
+      "commandLineArgs": "\"..\\..\\..\\..\\Additionals\\Samples\\Slovakia.geojson\" \"..\\..\\..\\..\\Additionals\\Samples\\Slovakia_.geojson\""
+    },
+    "Convert Turkey": {
+      "commandName": "Project",
+      "commandLineArgs": "\"..\\..\\..\\..\\Additionals\\Samples\\Turkey.geojson\" \"..\\..\\..\\..\\Additionals\\Samples\\Turkey_.geojson\""
     }
   }
 }
