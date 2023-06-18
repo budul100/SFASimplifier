@@ -10,6 +10,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Additionals", "Additionals"
 		Additionals\ReadMe.md = Additionals\ReadMe.md
 	EndProjectSection
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SFASimplifierCLI", "SFASimplifierCLI\SFASimplifierCLI.csproj", "{0C38C732-25B0-42B8-A4B6-FFCBD03478C8}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -20,6 +22,10 @@ Global
 		{CF8FA301-BE6C-4458-BB9F-FAAF7FC8F4E7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CF8FA301-BE6C-4458-BB9F-FAAF7FC8F4E7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{CF8FA301-BE6C-4458-BB9F-FAAF7FC8F4E7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0C38C732-25B0-42B8-A4B6-FFCBD03478C8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0C38C732-25B0-42B8-A4B6-FFCBD03478C8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0C38C732-25B0-42B8-A4B6-FFCBD03478C8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0C38C732-25B0-42B8-A4B6-FFCBD03478C8}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

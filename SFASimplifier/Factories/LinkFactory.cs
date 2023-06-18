@@ -1,5 +1,6 @@
 ﻿using HashExtensions;
 using NetTopologySuite.Geometries;
+using ProgressWatcher.Interfaces;
 using SFASimplifier.Extensions;
 using SFASimplifier.Models;
 using System.Collections.Generic;
@@ -39,14 +40,20 @@ namespace SFASimplifier.Factories
 
         #region Public Methods
 
-        public void Load(IEnumerable<Chain> chains)
+        public void Load(IEnumerable<Chain> chains, IPackage parentPackage)
         {
             var chainGroups = chains
                 .GroupBy(c => c.Key).ToArray();
 
+            using var infoPackage = parentPackage.GetPackage(
+                items: chainGroups,
+                status: "Determine links");
+
             foreach (var chainGroup in chainGroups)
             {
-                AddLink(chainGroup);
+                AddLink(
+                    chains: chainGroup,
+                    parentPackage: infoPackage);
             }
         }
 
@@ -54,7 +61,7 @@ namespace SFASimplifier.Factories
 
         #region Private Methods
 
-        private void AddLink(IEnumerable<Chain> chains)
+        private void AddLink(IEnumerable<Chain> chains, IPackage parentPackage)
         {
             var from = chains.First().From.Location;
             var to = chains.First().To.Location;
@@ -69,7 +76,8 @@ namespace SFASimplifier.Factories
             var coordinates = GetCoordinates(
                     from: from,
                     to: to,
-                    geometries: geometries)
+                    geometries: geometries,
+                    parentPackage: parentPackage)
                 .Where(c => c != default)
                 .WithoutAcute(angleMin).ToArray();
 
@@ -97,10 +105,14 @@ namespace SFASimplifier.Factories
         }
 
         private IEnumerable<Coordinate> GetCoordinates(Models.Location from, Models.Location to,
-            IEnumerable<Geometry> geometries)
+            IEnumerable<Geometry> geometries, IPackage parentPackage)
         {
             var relevantGeometry = geometries
                 .OrderByDescending(g => g.Coordinates.Length).First();
+
+            using var infoPackage = parentPackage.GetPackage(
+                items: relevantGeometry.Coordinates,
+                status: "Determine link coordinates");
 
             var otherGeometries = geometries
                 .Where(g => g != relevantGeometry)
@@ -135,6 +147,8 @@ namespace SFASimplifier.Factories
                 {
                     yield return currentCoordinates.Single();
                 }
+
+                infoPackage.NextStep();
             }
 
             yield return fromIsFirst

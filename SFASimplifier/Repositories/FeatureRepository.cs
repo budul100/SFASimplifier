@@ -1,5 +1,6 @@
 ﻿using NetTopologySuite.Features;
 using NetTopologySuite.Geometries;
+using ProgressWatcher.Interfaces;
 using SFASimplifier.Extensions;
 using StringExtensions;
 using System.Collections.Generic;
@@ -38,19 +39,25 @@ namespace SFASimplifier.Repositories
 
         #region Public Methods
 
-        public void Load(IEnumerable<Feature> collection)
+        public void Load(IEnumerable<Feature> collection, IPackage parentPackage)
         {
-            Features = GetFeatures(collection).ToArray();
+            Features = GetFeatures(
+                collection: collection,
+                parentPackage: parentPackage).ToArray();
         }
 
         #endregion Public Methods
 
         #region Private Methods
 
-        private IEnumerable<Feature> GetFeatures(IEnumerable<Feature> collection)
+        private IEnumerable<Feature> GetFeatures(IEnumerable<Feature> collection, IPackage parentPackage)
         {
             var relevants = collection
                 .Where(f => types.Contains(f.Geometry.OgcGeometryType)).ToArray();
+
+            using var infoPackage = parentPackage.GetPackage(
+                items: relevants,
+                status: "Loading features.");
 
             foreach (var relevant in relevants)
             {
@@ -106,6 +113,8 @@ namespace SFASimplifier.Repositories
                         yield return relevant;
                     }
                 }
+
+                infoPackage.NextStep();
             }
         }
 

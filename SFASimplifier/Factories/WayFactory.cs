@@ -1,5 +1,6 @@
 ﻿using NetTopologySuite.Features;
 using NetTopologySuite.Geometries;
+using ProgressWatcher.Interfaces;
 using SFASimplifier.Extensions;
 using SFASimplifier.Models;
 using System.Collections.Generic;
@@ -34,11 +35,17 @@ namespace SFASimplifier.Factories
 
         #region Public Methods
 
-        public void Load(IEnumerable<Feature> lines)
+        public void Load(IEnumerable<Feature> lines, IPackage parentPackage)
         {
+            using var infoPackage = parentPackage.GetPackage(
+                items: lines,
+                status: "Load lines.");
+
             foreach (var line in lines)
             {
-                AddWay(line);
+                AddWay(
+                    line: line,
+                    parentPackage: infoPackage);
             }
         }
 
@@ -46,10 +53,11 @@ namespace SFASimplifier.Factories
 
         #region Private Methods
 
-        private void AddWay(Feature line)
+        private void AddWay(Feature line, IPackage parentPackage)
         {
             var geometries = GetGeometries(
-                line: line).ToArray();
+                line: line,
+                parentPackage: parentPackage).ToArray();
 
             var way = new Way
             {
@@ -60,9 +68,13 @@ namespace SFASimplifier.Factories
             ways.Add(way);
         }
 
-        private IEnumerable<Geometry> GetGeometries(Feature line)
+        private IEnumerable<Geometry> GetGeometries(Feature line, IPackage parentPackage)
         {
             var geometries = line.GetGeometries().ToArray();
+
+            var infoPackage = parentPackage.GetPackage(
+                items: geometries,
+                status: "Load line geometries.");
 
             foreach (var geometry in geometries)
             {
@@ -101,6 +113,8 @@ namespace SFASimplifier.Factories
                 {
                     yield return resultFinal;
                 }
+
+                infoPackage.NextStep();
             }
         }
 

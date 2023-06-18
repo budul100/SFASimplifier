@@ -1,6 +1,7 @@
 ﻿using NetTopologySuite.Features;
 using NetTopologySuite.IO;
 using Newtonsoft.Json;
+using ProgressWatcher.Interfaces;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -9,9 +10,15 @@ namespace SFASimplifier.Repositories
 {
     internal class CollectionRepository
     {
-        #region Public Constructors
+        #region Public Properties
 
-        public CollectionRepository(string file)
+        public IEnumerable<Feature> Collection { get; private set; }
+
+        #endregion Public Properties
+
+        #region Public Methods
+
+        public void Load(string file, IPackage parentPackage)
         {
             if (string.IsNullOrWhiteSpace(file))
             {
@@ -26,21 +33,20 @@ namespace SFASimplifier.Repositories
                     message: $"The file \"{file}\" does not exist.");
             }
 
-            Collection = GetCollection(file);
+            Collection = GetCollection(
+                file: file,
+                parentPackage: parentPackage);
         }
 
-        #endregion Public Constructors
-
-        #region Public Properties
-
-        public IEnumerable<Feature> Collection { get; }
-
-        #endregion Public Properties
+        #endregion Public Methods
 
         #region Private Methods
 
-        private static IEnumerable<Feature> GetCollection(string file)
+        private static IEnumerable<Feature> GetCollection(string file, IPackage parentPackage)
         {
+            using var infoPackage = parentPackage.GetPackage(
+                status: "Load Collection");
+
             var serializer = GeoJsonSerializer.Create();
 
             using var stringReader = new StreamReader(file);

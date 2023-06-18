@@ -2,6 +2,7 @@
 using NetTopologySuite.Geometries;
 using NetTopologySuite.IO;
 using Newtonsoft.Json;
+using ProgressWatcher.Interfaces;
 using SFASimplifier.Extensions;
 using SFASimplifier.Factories;
 using SFASimplifier.Models;
@@ -34,18 +35,20 @@ namespace SFASimplifier.Writers
 
         #region Public Methods
 
-        public void Write(string path)
+        public void Write(string path, IPackage parentPackage)
         {
-            LoadLocations();
-            LoadWays();
+            using var infoPackage = parentPackage.GetPackage(
+                steps: 3,
+                status: "Create feature collection");
 
-            var serializer = GeoJsonSerializer.Create();
-            using var streamWriter = new StreamWriter(path);
-            using var jsonWriter = new JsonTextWriter(streamWriter);
+            LoadLocations(
+                parentPackage: infoPackage);
+            LoadWays(
+                parentPackage: infoPackage);
 
-            serializer.Serialize(
-                jsonWriter: jsonWriter,
-                value: featureCollection);
+            WriteCollection(
+                path: path,
+                parentPackage: infoPackage);
         }
 
         #endregion Public Methods
@@ -119,7 +122,7 @@ namespace SFASimplifier.Writers
             return result;
         }
 
-        private void LoadLocations()
+        private void LoadLocations(IPackage parentPackage)
         {
             var links = wayFactory.Ways
                 .SelectMany(w => w.Links)
@@ -129,25 +132,51 @@ namespace SFASimplifier.Writers
                 .Union(links.Select(l => l.To))
                 .OrderBy(l => l.Key?.ToString()).ToArray();
 
+            using var infoPackage = parentPackage.GetPackage(
+                items: relevants,
+                status: "Add location features.");
+
             foreach (var relevant in relevants)
             {
                 var feature = GetFeature(relevant);
 
                 featureCollection.Add(feature);
+
+                infoPackage.NextStep();
             }
         }
 
-        private void LoadWays()
+        private void LoadWays(IPackage parentPackage)
         {
             var relevants = wayFactory.Ways
                 .Where(w => w.Links?.Any() == true).ToArray();
 
+            using var infoPackage = parentPackage.GetPackage(
+                items: relevants,
+                status: "Add way features.");
+
             foreach (var relevant in relevants)
             {
                 var feature = GetFeature(relevant);
 
                 featureCollection.Add(feature);
+
+                infoPackage.NextStep();
             }
+        }
+
+        private void WriteCollection(string path, IPackage parentPackage)
+        {
+            using var infoPackage = parentPackage.GetPackage(
+                status: "Write file.");
+
+            var serializer = GeoJsonSerializer.Create();
+            using var streamWriter = new StreamWriter(path);
+            using var jsonWriter = new JsonTextWriter(streamWriter);
+
+            serializer.Serialize(
+                jsonWriter: jsonWriter,
+                value: featureCollection);
         }
 
         #endregion Private Methods

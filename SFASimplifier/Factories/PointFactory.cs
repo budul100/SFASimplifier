@@ -1,5 +1,6 @@
 ﻿using NetTopologySuite.Features;
 using NetTopologySuite.Geometries;
+using ProgressWatcher.Interfaces;
 using SFASimplifier.Models;
 using System.Collections.Generic;
 using System.Linq;
@@ -32,22 +33,34 @@ namespace SFASimplifier.Factories
 
         #region Public Methods
 
-        public void LoadPoints(IEnumerable<Feature> features)
+        public void LoadPoints(IEnumerable<Feature> features, IPackage parentPackage)
         {
+            using var infoPackage = parentPackage.GetPackage(
+                items: features,
+                status: "Load way points.");
+
             foreach (var feature in features)
             {
                 AddPoint(
                     geometry: feature.Geometry,
                     feature: feature);
+
+                infoPackage.NextStep();
             }
         }
 
-        public void LoadWays(IEnumerable<Way> ways)
+        public void LoadWays(IEnumerable<Way> ways, IPackage parentPackage)
         {
+            using var infoPackage = parentPackage.GetPackage(
+                items: ways,
+                status: "Load way borders.");
+
             foreach (var way in ways)
             {
                 AddBorders(
                     way: way);
+
+                infoPackage.NextStep();
             }
         }
 
@@ -73,18 +86,25 @@ namespace SFASimplifier.Factories
             }
         }
 
-        private void AddPoint(Geometry geometry, Feature feature = default)
+        private void AddPoint(Geometry geometry)
         {
             if (!points.ContainsKey(geometry))
             {
-                if (feature == default)
+                var feature = new Feature
                 {
-                    feature = new Feature
-                    {
-                        Geometry = geometry
-                    };
-                }
+                    Geometry = geometry
+                };
 
+                points.Add(
+                    key: geometry,
+                    value: feature);
+            }
+        }
+
+        private void AddPoint(Geometry geometry, Feature feature)
+        {
+            if (!points.ContainsKey(geometry))
+            {
                 points.Add(
                     key: geometry,
                     value: feature);

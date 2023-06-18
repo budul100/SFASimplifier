@@ -1,6 +1,7 @@
 ﻿using HashExtensions;
 using NetTopologySuite.Geometries;
 using NetTopologySuite.Geometries.Prepared;
+using ProgressWatcher.Interfaces;
 using SFASimplifier.Extensions;
 using SFASimplifier.Models;
 using SFASimplifier.Structs;
@@ -39,10 +40,19 @@ namespace SFASimplifier.Factories
 
         #region Public Methods
 
-        public void Load(IEnumerable<Segment> segments)
+        public void Load(IEnumerable<Segment> segments, IPackage parentPackage)
         {
-            AddEndeds(segments);
-            AddOpens(segments);
+            using var infoPackage = parentPackage.GetPackage(
+                steps: 2,
+                status: "Determine segment chains");
+
+            AddEndeds(
+                segments: segments,
+                parentPackage: infoPackage);
+
+            AddOpens(
+                segments: segments,
+                parentPackage: infoPackage);
         }
 
         #endregion Public Methods
@@ -61,12 +71,16 @@ namespace SFASimplifier.Factories
             }
         }
 
-        private void AddEndeds(IEnumerable<Segment> segments)
+        private void AddEndeds(IEnumerable<Segment> segments, IPackage parentPackage)
         {
             var relevants = segments
                 .Where(s => !s.From.Location.IsBorder
                     && !s.To.Location.IsBorder
                     && s.From.Location != s.To.Location).ToArray();
+
+            using var infoPackage = parentPackage.GetPackage(
+                items: relevants,
+                status: "Determine segment chains with borders on both ends.");
 
             foreach (var relevant in relevants)
             {
@@ -75,14 +89,20 @@ namespace SFASimplifier.Factories
                 result.Segments.Add(relevant);
 
                 AddChain(result);
+
+                infoPackage.NextStep();
             }
         }
 
-        private void AddOpens(IEnumerable<Segment> segments)
+        private void AddOpens(IEnumerable<Segment> segments, IPackage parentPackage)
         {
             var relevants = segments
                 .Where(s => !s.From.Location.IsBorder
                     && s.To.Location.IsBorder).ToArray();
+
+            using var infoPackage = parentPackage.GetPackage(
+                items: relevants,
+                status: "Determine segment chains with borders first end only.");
 
             foreach (var relevant in relevants)
             {
@@ -90,16 +110,21 @@ namespace SFASimplifier.Factories
 
                 FindChain(
                     chain: result,
-                    segments: segments);
+                    segments: segments,
+                    parentPackage: infoPackage);
             }
         }
 
-        private void FindChain(Chain chain, IEnumerable<Segment> segments)
+        private void FindChain(Chain chain, IEnumerable<Segment> segments, IPackage parentPackage)
         {
             var relevants = segments
                 .Where(s => chain.To.Location == s.From.Location
                     && !chain.Segments.Contains(s)
                     && !chain.Locations.Contains(s.To.Location)).ToArray();
+
+            using var infoPackage = parentPackage.GetPackage(
+                items: relevants,
+                status: "Determine segment chains with borders first end only.");
 
             foreach (var relevant in relevants)
             {
@@ -115,7 +140,8 @@ namespace SFASimplifier.Factories
                     {
                         FindChain(
                             chain: result,
-                            segments: segments);
+                            segments: segments,
+                            parentPackage: infoPackage);
                     }
                     else if (result.From.Location != result.To.Location)
                     {

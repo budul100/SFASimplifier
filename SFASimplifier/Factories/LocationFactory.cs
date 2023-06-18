@@ -1,6 +1,7 @@
 ﻿using FuzzySharp;
 using NetTopologySuite.Features;
 using NetTopologySuite.Geometries;
+using ProgressWatcher.Interfaces;
 using SFASimplifier.Extensions;
 using SFASimplifier.Models;
 using StringExtensions;
@@ -50,7 +51,7 @@ namespace SFASimplifier.Factories
             return result;
         }
 
-        public void Tidy(IEnumerable<Segment> segments)
+        public void Tidy(IEnumerable<Segment> segments, IPackage parentPackage)
         {
             var fromNodes = segments
                 .Select(s => s.From);
@@ -59,6 +60,10 @@ namespace SFASimplifier.Factories
 
             var locationGroups = fromNodes.Union(toNodes).Distinct()
                 .GroupBy(n => n.Location).ToArray();
+
+            using var infoPackage = parentPackage.GetPackage(
+                items: locationGroups,
+                status: "Tidy locations.");
 
             foreach (var locationGroup in locationGroups)
             {
@@ -87,6 +92,8 @@ namespace SFASimplifier.Factories
                         coordinates: ring.ToArray());
                     locationGroup.Key.Centroid = locationGroup.Key.Geometry.Boundary.Centroid;
                 }
+
+                infoPackage.NextStep();
             }
         }
 
