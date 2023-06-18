@@ -1,17 +1,22 @@
 ﻿using NetTopologySuite.Geometries;
 using ProgressWatcher;
+using ProgressWatcher.Interfaces;
 using SFASimplifier.Factories;
 using SFASimplifier.Repositories;
 using SFASimplifier.Writers;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace SFASimplifier
 {
     public class Service
     {
         #region Private Fields
+
+        private const double StatusWeightDeterminingLinks = 0.2;
+        private const double StatusWeightDeterminingSegments = 0.6;
+        private const double StatusWeightLoadingFeatures = 0.1;
+        private const double StatusWeightWritingFeatures = 0.1;
 
         private readonly ChainFactory chainFactory;
         private readonly CollectionRepository collectionRepository;
@@ -86,7 +91,7 @@ namespace SFASimplifier
 
             progressWatcher = new Watcher();
 
-            progressWatcher.PropertyChanged += OnProgressWatcherChanged;
+            progressWatcher.PropertyChanged += OnProgressChanged;
         }
 
         #endregion Public Constructors
@@ -96,58 +101,89 @@ namespace SFASimplifier
         public void Run(string importPath, string exportPath)
         {
             var parentPackage = progressWatcher.Initialize(
-                allSteps: 11,
+                allSteps: 4,
                 status: "Merge SFA data.");
 
-            collectionRepository.Load(
-                file: importPath,
+            LoadFeatures(
+                importPath: importPath,
                 parentPackage: parentPackage);
 
-            if (collectionRepository.Collection?.Any() == true)
-            {
-                pointRepository.Load(
-                    collection: collectionRepository.Collection,
-                    parentPackage: parentPackage);
-                lineRepository.Load(
-                    collection: collectionRepository.Collection,
-                    parentPackage: parentPackage);
+            DetermineSegments(
+                parentPackage: parentPackage);
 
-                wayFactory.Load(
-                    lines: lineRepository.Features,
-                    parentPackage: parentPackage);
+            DetermineLinks(
+                parentPackage: parentPackage);
 
-                pointFactory.LoadPoints(
-                    features: pointRepository.Features,
-                    parentPackage: parentPackage);
-                pointFactory.LoadWays(
-                    ways: wayFactory.Ways,
-                    parentPackage: parentPackage);
-
-                segmentFactory.Load(
-                    ways: wayFactory.Ways,
-                    parentPackage: parentPackage);
-                locationFactory.Tidy(
-                    segments: segmentFactory.Segments,
-                    parentPackage: parentPackage);
-
-                chainFactory.Load(
-                    segments: segmentFactory.Segments,
-                    parentPackage: parentPackage);
-                linkFactory.Load(
-                    chains: chainFactory.Chains,
-                    parentPackage: parentPackage);
-
-                featureWriter.Write(path:
-                    exportPath,
-                    parentPackage: parentPackage);
-            }
+            WriteFeatures(
+                exportPath: exportPath,
+                parentPackage: parentPackage);
         }
 
         #endregion Public Methods
 
         #region Private Methods
 
-        private void OnProgressWatcherChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+        private void DetermineLinks(IPackage parentPackage)
+        {
+            var infoPackage = parentPackage.GetPackage(
+                steps: 3,
+                status: "Determining links.",
+                weight: StatusWeightDeterminingLinks);
+
+            locationFactory.Tidy(
+                segments: segmentFactory.Segments,
+                parentPackage: infoPackage);
+
+            chainFactory.Load(
+                segments: segmentFactory.Segments,
+                parentPackage: infoPackage);
+            linkFactory.Load(
+                chains: chainFactory.Chains,
+                parentPackage: infoPackage);
+        }
+
+        private void DetermineSegments(IPackage parentPackage)
+        {
+            var infoPackage = parentPackage.GetPackage(
+                status: "Determining segments.",
+                weight: StatusWeightDeterminingSegments);
+
+            segmentFactory.Load(
+                ways: wayFactory.Ways,
+                parentPackage: infoPackage);
+        }
+
+        private void LoadFeatures(string importPath, IPackage parentPackage)
+        {
+            var infoPackage = parentPackage.GetPackage(
+                steps: 6,
+                status: "Loading features.",
+                weight: StatusWeightLoadingFeatures);
+
+            collectionRepository.Load(
+                file: importPath,
+                parentPackage: infoPackage);
+
+            pointRepository.Load(
+                collection: collectionRepository.Collection,
+                parentPackage: infoPackage);
+            lineRepository.Load(
+                collection: collectionRepository.Collection,
+                parentPackage: infoPackage);
+
+            wayFactory.Load(
+                lines: lineRepository.Features,
+                parentPackage: infoPackage);
+
+            pointFactory.LoadPoints(
+                features: pointRepository.Features,
+                parentPackage: infoPackage);
+            pointFactory.LoadWays(
+                ways: wayFactory.Ways,
+                parentPackage: infoPackage);
+        }
+
+        private void OnProgressChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
             if (onProgressChange != default)
             {
@@ -157,6 +193,17 @@ namespace SFASimplifier
                     arg1: progressWatcher.ProgressAll,
                     arg2: text);
             }
+        }
+
+        private void WriteFeatures(string exportPath, IPackage parentPackage)
+        {
+            var infoPackage = parentPackage.GetPackage(
+                status: "Writing collection.",
+                weight: StatusWeightWritingFeatures);
+
+            featureWriter.Write(
+                path: exportPath,
+                parentPackage: infoPackage);
         }
 
         #endregion Private Methods

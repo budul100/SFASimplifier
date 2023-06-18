@@ -36,6 +36,12 @@ namespace SFASimplifier.Repositories
             Collection = GetCollection(
                 file: file,
                 parentPackage: parentPackage);
+
+            if (Collection?.Any() != true)
+            {
+                throw new System.ApplicationException(
+                    message: $"The file \"{file}\" does not contain any feature collection.");
+            }
         }
 
         #endregion Public Methods
@@ -45,7 +51,7 @@ namespace SFASimplifier.Repositories
         private static IEnumerable<Feature> GetCollection(string file, IPackage parentPackage)
         {
             using var infoPackage = parentPackage.GetPackage(
-                status: "Load Collection");
+                status: "Loading collection");
 
             var serializer = GeoJsonSerializer.Create();
 
