@@ -40,6 +40,18 @@ namespace SFASimplifier.Extensions
             }
         }
 
+        public static double GetDistance(this Geometry geometry)
+        {
+            var result = 0.0;
+
+            for (int index = 1; index < geometry.Coordinates.Length; index++)
+            {
+                result += geometry.Coordinates[index - 1].GetDistance(geometry.Coordinates[index]);
+            }
+
+            return result;
+        }
+
         public static Coordinate GetNearest(this Geometry current, Geometry other)
         {
             var result = DistanceOp.NearestPoints(

@@ -7,6 +7,8 @@ namespace SFASimplifier.Models
     {
         #region Public Properties
 
+        public double Distance { get; set; }
+
         public Node From { get; set; }
 
         public Geometry Geometry { get; set; }

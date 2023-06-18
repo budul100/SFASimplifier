@@ -69,8 +69,11 @@ namespace SFASimplifier.Factories
             var geometry = geometryFactory.CreateLineString(
                 coordinates: coordinates);
 
+            var distance = geometry.GetDistance();
+
             var segment = new Segment
             {
+                Distance = distance,
                 From = nodeFrom,
                 Geometry = geometry,
                 To = nodeTo,
