@@ -3,6 +3,7 @@ using ProgressWatcher;
 using SFASimplifier.Factories;
 using SFASimplifier.Repositories;
 using SFASimplifier.Writers;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -19,6 +20,7 @@ namespace SFASimplifier
         private readonly FeatureRepository lineRepository;
         private readonly LinkFactory linkFactory;
         private readonly LocationFactory locationFactory;
+        private readonly Action<double, string> onProgressChange;
         private readonly PointFactory pointFactory;
         private readonly FeatureRepository pointRepository;
         private readonly Watcher progressWatcher;
@@ -33,8 +35,10 @@ namespace SFASimplifier
             IEnumerable<(string, string)> pointAttributesFilter, IEnumerable<OgcGeometryType> lineTypes,
             IEnumerable<(string, string)> lineAttributesCheck, IEnumerable<(string, string)> lineAttributesFilter,
             int locationsDistanceToOthers, double locationsFuzzyScore, string locationsKeyAttribute,
-            int pointsDistanceMaxToLine, double linksAngleMin, double linksDetourMax)
+            int pointsDistanceMaxToLine, double linksAngleMin, double linksDetourMax, Action<double, string> onProgressChange)
         {
+            this.onProgressChange = onProgressChange;
+
             collectionRepository = new CollectionRepository();
 
             pointRepository = new FeatureRepository(
@@ -81,6 +85,8 @@ namespace SFASimplifier
                 wayFactory: wayFactory);
 
             progressWatcher = new Watcher();
+
+            progressWatcher.PropertyChanged += OnProgressWatcherChanged;
         }
 
         #endregion Public Constructors
@@ -138,5 +144,19 @@ namespace SFASimplifier
         }
 
         #endregion Public Methods
+
+        #region Private Methods
+
+        private void OnProgressWatcherChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            if (onProgressChange != default)
+            {
+                onProgressChange.Invoke(
+                    arg1: progressWatcher.ProgressAll,
+                    arg2: progressWatcher.Status);
+            }
+        }
+
+        #endregion Private Methods
     }
 }

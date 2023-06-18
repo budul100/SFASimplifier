@@ -1,13 +1,18 @@
 ﻿using NetTopologySuite.Geometries;
+using ShellProgressBar;
+using System;
 
 namespace SFASimplifierCLI
 {
     internal static class Program
     {
-        #region Public Methods
+        private static IProgress<float> progress;
+        #region Internal Methods
 
         internal static void Main(string[] args)
         {
+
+
             var pointTypes = new OgcGeometryType[]
             {
                 OgcGeometryType.Point,
@@ -44,6 +49,11 @@ namespace SFASimplifierCLI
                 ("type", "route"),
             };
 
+            var progressBar = new ProgressBar(10000, "My Progress Message");
+            progress = progressBar.AsProgress<float>();
+
+            void onProgressChange(double p, string s) { progress.Report((float)p); progressBar.Message = s; }
+
             var service = new SFASimplifier.Service(
                 pointTypes: pointTypes,
                 pointAttributesCheck: pointAttributesCheck,
@@ -56,11 +66,14 @@ namespace SFASimplifierCLI
                 locationsKeyAttribute: "name",
                 pointsDistanceMaxToLine: 20,
                 linksAngleMin: 2.5,
-                linksDetourMax: 1.1);
+                linksDetourMax: 1.1,
+                onProgressChange: onProgressChange);
 
             service.Run(args[0], args[1]);
         }
 
-        #endregion Public Methods
+        #endregion Internal Methods
+
+
     }
 }
