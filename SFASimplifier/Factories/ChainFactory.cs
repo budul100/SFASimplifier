@@ -98,54 +98,70 @@ namespace SFASimplifier.Factories
         {
             var relevants = segments
                 .Where(s => !s.From.Location.IsBorder
-                    && s.To.Location.IsBorder).ToArray();
+                    && s.To.Location.IsBorder)
+                .OrderBy(s => s.Distance).ToArray();
 
             using var infoPackage = parentPackage.GetPackage(
                 items: relevants,
                 status: "Determine segment chains with borders first end only.");
 
+            var nexts = segments
+                .Where(s => s.From.Location.IsBorder)
+                .GroupBy(s => s.From.Location)
+                .ToDictionary(
+                    keySelector: g => g.Key,
+                    elementSelector: g => g.Select(s => s).ToArray());
+
             foreach (var relevant in relevants)
             {
-                var result = GetChain(relevant);
+                var chain = GetChain(relevant);
 
                 FindChain(
-                    chain: result,
-                    segments: segments,
+                    chain: chain,
+                    nexts: nexts,
+                    covereds: new HashSet<Segment>(),
                     parentPackage: infoPackage);
             }
         }
 
-        private void FindChain(Chain chain, IEnumerable<Segment> segments, IPackage parentPackage)
+        private void FindChain(Chain chain, IDictionary<Models.Location, Segment[]> nexts,
+            HashSet<Segment> covereds, IPackage parentPackage)
         {
-            var relevants = segments
-                .Where(s => chain.To.Location == s.From.Location
-                    && !chain.Segments.Contains(s)
-                    && !chain.Locations.Contains(s.To.Location)).ToArray();
-
-            using var infoPackage = parentPackage.GetPackage(
-                items: relevants,
-                status: "Determine segment chains with borders first end only.");
-
-            foreach (var relevant in relevants)
+            if (nexts.ContainsKey(chain.To.Location))
             {
-                if (HasValidAngle(
-                    chain: chain,
-                    segment: relevant))
-                {
-                    var result = GetChain(
-                        segment: relevant,
-                        given: chain);
+                var relevants = nexts[chain.To.Location]
+                    .Where(s => !covereds.Contains(s)
+                        && !chain.Locations.Contains(s.To.Location))
+                    .OrderBy(s => s.Distance).ToArray();
 
-                    if (result.To.Location.IsBorder)
+                using var infoPackage = parentPackage.GetPackage(
+                    items: relevants,
+                    status: "Determine segment chains with borders first end only.");
+
+                foreach (var relevant in relevants)
+                {
+                    if (HasValidAngle(
+                        chain: chain,
+                        segment: relevant))
                     {
-                        FindChain(
-                            chain: result,
-                            segments: segments,
-                            parentPackage: infoPackage);
-                    }
-                    else if (result.From.Location != result.To.Location)
-                    {
-                        AddChain(result);
+                        covereds.Add(relevant);
+
+                        var result = GetChain(
+                            segment: relevant,
+                            given: chain);
+
+                        if (result.To.Location.IsBorder)
+                        {
+                            FindChain(
+                                chain: result,
+                                nexts: nexts,
+                                covereds: covereds,
+                                parentPackage: infoPackage);
+                        }
+                        else if (result.From.Location != result.To.Location)
+                        {
+                            AddChain(result);
+                        }
                     }
                 }
             }
