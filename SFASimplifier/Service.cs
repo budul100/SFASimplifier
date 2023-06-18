@@ -151,9 +151,11 @@ namespace SFASimplifier
         {
             if (onProgressChange != default)
             {
+                var text = $"{progressWatcher.Status} ({progressWatcher.ProgressTip * 100:0}%)";
+
                 onProgressChange.Invoke(
                     arg1: progressWatcher.ProgressAll,
-                    arg2: progressWatcher.Status);
+                    arg2: text);
             }
         }
 

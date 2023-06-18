@@ -48,15 +48,35 @@ namespace SFASimplifier.Factories
 
         public void Load(IEnumerable<Way> ways, IPackage parentPackage)
         {
+            var geometries = ways
+                .SelectMany(w => w.Geometries.Select(g => (Geometry: g, Way: w)))
+                .GroupBy(g => (g.Geometry.Coordinates.GetSequenceHashDirected(), g.Geometry.Coordinates.Length)).ToArray();
+
             using var infoPackage = parentPackage.GetPackage(
-                items: ways,
+                items: geometries,
                 status: "Determining segments.");
 
-            foreach (var way in ways)
+            foreach (var geometry in geometries)
             {
-                LoadWay(
-                    way: way,
-                    parentPackage: infoPackage);
+                var relevant = geometry.First().Geometry;
+
+                var nodes = GetNodes(relevant)
+                    .GroupBy(n => n.Position)
+                    .Select(g => g.OrderByDescending(n => !n.Location.IsBorder).First())
+                    .OrderBy(n => n.Position).ToArray();
+
+                if (nodes.Length > 1)
+                {
+                    var currentWays = geometry
+                        .Select(g => g.Way).ToArray();
+
+                    AddSegments(
+                        geometry: relevant,
+                        nodes: nodes,
+                        ways: currentWays);
+                }
+
+                infoPackage.NextStep();
             }
         }
 
@@ -64,7 +84,7 @@ namespace SFASimplifier.Factories
 
         #region Private Methods
 
-        private void AddSegment(Way way, Node nodeFrom, Node nodeTo, Coordinate[] coordinates)
+        private void AddSegment(Node nodeFrom, Node nodeTo, Coordinate[] coordinates, IEnumerable<Way> ways)
         {
             var geometry = geometryFactory.CreateLineString(
                 coordinates: coordinates);
@@ -88,15 +108,11 @@ namespace SFASimplifier.Factories
                     value: segment);
             }
 
-            segments[key].Ways.Add(way);
+            segments[key].Ways.UnionWith(ways);
         }
 
-        private void AddSegments(Way way, IEnumerable<Node> nodes, Geometry geometry, IPackage parentPackage)
+        private void AddSegments(Geometry geometry, IEnumerable<Node> nodes, IEnumerable<Way> ways)
         {
-            using var infoPackage = parentPackage.GetPackage(
-                items: geometry.Coordinates,
-                status: "Determining segment coordinates.");
-
             var nodeFrom = default(Node);
             var indexFrom = default(int?);
 
@@ -135,19 +151,19 @@ namespace SFASimplifier.Factories
                         if (nodeFrom != default)
                         {
                             AddSegment(
-                                way: way,
                                 nodeFrom: nodeFrom,
                                 nodeTo: nodeTo,
-                                coordinates: coordinates);
+                                coordinates: coordinates,
+                                ways: ways);
 
                             var coordinatesBackward = coordinates
                                 .Reverse().ToArray();
 
                             AddSegment(
-                                way: way,
                                 nodeFrom: nodeTo,
                                 nodeTo: nodeFrom,
-                                coordinates: coordinatesBackward);
+                                coordinates: coordinatesBackward,
+                                ways: ways);
 
                             indexFrom = default;
                         }
@@ -158,21 +174,15 @@ namespace SFASimplifier.Factories
 
                 indexFrom ??= indexTo;
                 positionFrom = positionTo;
-
-                infoPackage.NextStep();
             }
         }
 
-        private IEnumerable<Node> GetNodes(Geometry geometry, IPackage parentPackage)
+        private IEnumerable<Node> GetNodes(Geometry geometry)
         {
             var pointGroups = pointFactory.Points.GetAround(
                 geometry: geometry,
                 meters: distanceNodeToLine)
                 .GroupBy(p => p.GetAttribute(keyAttribute) ?? p.GetHashCode().ToString()).ToArray();
-
-            using var infoPackage = parentPackage.GetPackage(
-                items: pointGroups,
-                status: "Determining segment nodes.");
 
             foreach (var pointGroup in pointGroups)
             {
@@ -190,34 +200,6 @@ namespace SFASimplifier.Factories
                         key: key);
 
                     yield return relevant;
-                }
-
-                infoPackage.NextStep();
-            }
-        }
-
-        private void LoadWay(Way way, IPackage parentPackage)
-        {
-            using var infoPackage = parentPackage.GetPackage(
-                steps: way.Geometries.Count() * 2,
-                status: "Determining segments.");
-
-            foreach (var geometry in way.Geometries)
-            {
-                var nodes = GetNodes(
-                    geometry: geometry,
-                    parentPackage: infoPackage)
-                    .GroupBy(n => n.Position)
-                    .Select(g => g.OrderByDescending(n => !n.Location.IsBorder).First())
-                    .OrderBy(n => n.Position).ToArray();
-
-                if (nodes.Length > 1)
-                {
-                    AddSegments(
-                        way: way,
-                        nodes: nodes,
-                        geometry: geometry,
-                        parentPackage: infoPackage);
                 }
             }
         }

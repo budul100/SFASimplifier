@@ -9,8 +9,6 @@ namespace SFASimplifier.Models
 
         public Coordinate Coordinate { get; set; }
 
-        public double Distance { get; set; }
-
         public bool IsBorder { get; set; }
 
         public Location Location { get; set; }

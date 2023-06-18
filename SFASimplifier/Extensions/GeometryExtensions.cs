@@ -18,25 +18,20 @@ namespace SFASimplifier.Extensions
             foreach (var point in points)
             {
                 var coordinate = geometry.GetNearest(point.Geometry);
-                var distance = point.Geometry.Coordinate.GetDistance(coordinate);
+                var position = geometry.GetPosition(coordinate);
 
-                if (distance <= distanceNodeToLine || point.Attributes?.Count > 0)
+                var isBorder = !(point.Attributes?.Count > 0)
+                    && point.Geometry.Coordinate.GetDistance(coordinate) <= distanceNodeToLine;
+
+                var result = new Node
                 {
-                    var position = geometry.GetPosition(coordinate);
-                    var isBorder = distance <= distanceNodeToLine
-                        && !(point.Attributes?.Count > 0);
+                    Coordinate = coordinate,
+                    IsBorder = isBorder,
+                    Point = point,
+                    Position = position,
+                };
 
-                    var result = new Node
-                    {
-                        Coordinate = coordinate,
-                        Distance = distance,
-                        IsBorder = isBorder,
-                        Point = point,
-                        Position = position,
-                    };
-
-                    yield return result;
-                }
+                yield return result;
             }
         }
 
