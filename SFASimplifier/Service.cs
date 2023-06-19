@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using NetTopologySuite.Algorithm;
+﻿using NetTopologySuite.Algorithm;
 using NetTopologySuite.Geometries;
 using ProgressWatcher;
 using ProgressWatcher.Interfaces;
@@ -10,6 +7,9 @@ using SFASimplifier.Factories;
 using SFASimplifier.Models;
 using SFASimplifier.Repositories;
 using SFASimplifier.Writers;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace SFASimplifier
 {
@@ -18,8 +18,8 @@ namespace SFASimplifier
         #region Private Fields
 
         private const double StatusWeightDeterminingLinks = 0.2;
-        private const double StatusWeightDeterminingSegments = 0.5;
-        private const double StatusWeightLoadingFiles = 0.2;
+        private const double StatusWeightDeterminingSegments = 0.6;
+        private const double StatusWeightLoadingFiles = 0.1;
 
         private readonly ChainFactory chainFactory;
         private readonly FeatureWriter featureWriter;

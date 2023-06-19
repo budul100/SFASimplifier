@@ -69,13 +69,17 @@ namespace SFASimplifier.Factories
             var geometryGroups = allGeometries.GetLengthGroups(
                 lengthSplit: lengthSplit).ToArray();
 
+            using var infoPackage = parentPackage.GetPackage(
+                items: geometryGroups,
+                status: "Create link");
+
             foreach (var geometryGroup in geometryGroups)
             {
                 var coordinates = GetCoordinates(
                         from: from,
                         to: to,
                         geometries: geometryGroup,
-                        parentPackage: parentPackage)
+                        parentPackage: infoPackage)
                     .WithoutAcute(angleMin).ToArray();
 
                 var lineString = geometryFactory

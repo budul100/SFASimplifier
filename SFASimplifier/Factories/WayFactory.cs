@@ -76,7 +76,7 @@ namespace SFASimplifier.Factories
         {
             var geometries = line.GetGeometries().ToArray();
 
-            var infoPackage = parentPackage.GetPackage(
+            using var infoPackage = parentPackage.GetPackage(
                 items: geometries,
                 status: "Load line geometries.");
 
