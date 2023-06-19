@@ -5,6 +5,7 @@ using StringExtensions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace SFASimplifier.Extensions
 {
@@ -85,6 +86,15 @@ namespace SFASimplifier.Extensions
                 .GroupBy(a => a)
                 .OrderByDescending(g => g.Count())
                 .FirstOrDefault()?.Key;
+
+            return result;
+        }
+
+        public static bool IsValid(this Feature feature, IEnumerable<string> lineFilters, IEnumerable<string> attributesKey)
+        {
+            var result = (lineFilters?.Any() != true) || lineFilters.Any(f => Regex.IsMatch(
+                input: feature.GetAttribute(attributesKey),
+                pattern: f));
 
             return result;
         }

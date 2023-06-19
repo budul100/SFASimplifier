@@ -34,16 +34,21 @@ namespace SFASimplifier.Factories
 
         #region Public Methods
 
-        public void Load(IEnumerable<Feature> lines, IPackage parentPackage)
+        public void Load(IEnumerable<Feature> lines, IEnumerable<string> attributesKey,
+            IEnumerable<string> lineFilters, IPackage parentPackage)
         {
+            var relevants = lines.Where(l => l.IsValid(
+                lineFilters: lineFilters,
+                attributesKey: attributesKey)).ToArray();
+
             using var infoPackage = parentPackage.GetPackage(
-                items: lines,
+                items: relevants,
                 status: "Load lines.");
 
-            foreach (var line in lines)
+            foreach (var relevant in relevants)
             {
                 AddWay(
-                    line: line,
+                    line: relevant,
                     parentPackage: infoPackage);
             }
         }

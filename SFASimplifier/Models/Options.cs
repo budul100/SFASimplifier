@@ -41,6 +41,13 @@ namespace SFASimplifier.Models
         public IEnumerable<string> LineAttributesKey { get; set; }
 
         [Option(
+            longName: "linefilter",
+            HelpText = "One or multiple values of the line key attributes which the line input should be filtered for.",
+            Separator = ',',
+            Required = false)]
+        public IEnumerable<string> LineFilters { get; set; }
+
+        [Option(
             longName: "linetypes",
             HelpText = "The geometry types to be considered as lines. " +
                 "See <https://nettopologysuite.github.io/NetTopologySuite/api/NetTopologySuite.Geometries.OgcGeometryType.html> for possible values.",
@@ -57,7 +64,7 @@ namespace SFASimplifier.Models
             HelpText = "The min value of the angle between two geometry segments to be merged into a link or line. " +
                 "This values allows to avoid acute angles on the lines.",
             Required = false,
-            Default = 2)]
+            Default = 120)]
         public double LinksAngleMin { get; set; }
 
         [Option(

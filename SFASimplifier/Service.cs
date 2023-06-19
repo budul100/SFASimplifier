@@ -1,4 +1,7 @@
-﻿using NetTopologySuite.Algorithm;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using NetTopologySuite.Algorithm;
 using NetTopologySuite.Geometries;
 using ProgressWatcher;
 using ProgressWatcher.Interfaces;
@@ -7,8 +10,6 @@ using SFASimplifier.Factories;
 using SFASimplifier.Models;
 using SFASimplifier.Repositories;
 using SFASimplifier.Writers;
-using System;
-using System.Collections.Generic;
 
 namespace SFASimplifier
 {
@@ -19,7 +20,6 @@ namespace SFASimplifier
         private const double StatusWeightDeterminingLinks = 0.2;
         private const double StatusWeightDeterminingSegments = 0.5;
         private const double StatusWeightLoadingFiles = 0.2;
-        private const double StatusWeightWritingFile = 0.1;
 
         private readonly ChainFactory chainFactory;
         private readonly FeatureWriter featureWriter;
@@ -44,7 +44,7 @@ namespace SFASimplifier
 
             progressWatcher = new Watcher();
             progressWatcher.PropertyChanged += OnProgressChanged;
-            progressWatcher.ProgressCompleted += OnProgressCompleted; ;
+            progressWatcher.ProgressCompleted += OnProgressCompleted;
 
             geometryFactory = new GeometryFactory();
 
@@ -153,7 +153,8 @@ namespace SFASimplifier
                 file: inputPath,
                 parentPackage: infoPackage);
 
-            var pointAttributesFilter = options.PointAttributesFilter.GetKeyValuePairs();
+            var pointAttributesFilter = options.PointAttributesFilter
+                .GetKeyValuePairs().ToArray();
 
             var pointRepository = new FeatureRepository(
                 types: options.PointTypes,
@@ -167,7 +168,8 @@ namespace SFASimplifier
                 features: pointRepository.Features,
                 parentPackage: infoPackage);
 
-            var lineAttributesFilter = options.LineAttributesFilter.GetKeyValuePairs();
+            var lineAttributesFilter = options.LineAttributesFilter
+                .GetKeyValuePairs().ToArray();
 
             var lineRepository = new FeatureRepository(
                 types: options.LineTypes,
@@ -179,6 +181,8 @@ namespace SFASimplifier
                 parentPackage: infoPackage);
             wayFactory.Load(
                 lines: lineRepository.Features,
+                attributesKey: options.LineAttributesKey,
+                lineFilters: options.LineFilters,
                 parentPackage: infoPackage);
             pointFactory.LoadWays(
                 ways: wayFactory.Ways,
@@ -227,8 +231,7 @@ namespace SFASimplifier
         private void WriteFile(string outputPath, IPackage parentPackage)
         {
             using var infoPackage = parentPackage.GetPackage(
-                status: "Writing collection.",
-                weight: StatusWeightWritingFile);
+                status: "Writing collection.");
 
             featureWriter.Write(
                 path: outputPath,

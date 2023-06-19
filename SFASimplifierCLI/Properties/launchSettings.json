@@ -12,6 +12,10 @@
       "commandName": "Project",
       "commandLineArgs": "-i \"..\\..\\..\\..\\Additionals\\Samples\\Bremen.geojson\" -o \"..\\..\\..\\..\\Additionals\\Samples\\Bremen_.geojson\""
     },
+    "Convert Bremen filtered": {
+      "commandName": "Project",
+      "commandLineArgs": "-i \"..\\..\\..\\..\\Additionals\\Samples\\Bremen.geojson\" -o \"..\\..\\..\\..\\Additionals\\Samples\\Bremen_.geojson\" --linefilter \"2200 Wanne-Eickel - Hamburg,1404 Abzw Bremen Gabelung - Sagehorn\""
+    },
     "Convert Hungary": {
       "commandName": "Project",
       "commandLineArgs": "-i \"..\\..\\..\\..\\Additionals\\Samples\\Hungary.geojson\" -o \"..\\..\\..\\..\\Additionals\\Samples\\Hungary_.geojson\""

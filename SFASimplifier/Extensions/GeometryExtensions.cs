@@ -3,6 +3,7 @@ using NetTopologySuite.Geometries;
 using NetTopologySuite.LinearReferencing;
 using NetTopologySuite.Operation.Distance;
 using SFASimplifier.Models;
+using StringExtensions;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -19,25 +20,28 @@ namespace SFASimplifier.Extensions
         #region Public Methods
 
         public static IEnumerable<Node> FilterNodes(this Geometry geometry, IEnumerable<Feature> points,
-            double distanceNodeToLine)
+            IEnumerable<string> keyAttributes, double distanceNodeToLine)
         {
             foreach (var point in points)
             {
                 var coordinate = geometry.GetNearest(point.Geometry);
                 var position = geometry.GetPosition(coordinate);
 
-                var isBorder = !(point.Attributes?.Count > 0)
-                    && point.Geometry.Coordinate.GetDistance(coordinate) <= distanceNodeToLine;
-
-                var result = new Node
+                if (!point.GetAttribute(keyAttributes).IsEmpty()
+                    || point.Geometry.Coordinate.GetDistance(coordinate) <= distanceNodeToLine)
                 {
-                    Coordinate = coordinate,
-                    IsBorder = isBorder,
-                    Point = point,
-                    Position = position,
-                };
+                    var isBorder = point.GetAttribute(keyAttributes).IsEmpty();
 
-                yield return result;
+                    var result = new Node
+                    {
+                        Coordinate = coordinate,
+                        IsBorder = isBorder,
+                        Point = point,
+                        Position = position,
+                    };
+
+                    yield return result;
+                }
             }
         }
 

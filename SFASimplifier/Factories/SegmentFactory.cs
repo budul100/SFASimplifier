@@ -185,6 +185,7 @@ namespace SFASimplifier.Factories
             {
                 var relevants = geometry.FilterNodes(
                     points: pointGroup,
+                    keyAttributes: keyAttributes,
                     distanceNodeToLine: distanceNodeToLine).ToArray();
 
                 var key = pointGroup.GetPrimaryAttribute(keyAttributes);
