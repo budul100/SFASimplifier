@@ -12,22 +12,20 @@ namespace SFASimplifier.Factories
     {
         #region Private Fields
 
-        private const int TakeMaxGeometries = 1000;
-
         private readonly double angleMin;
-        private readonly double detourMax;
         private readonly GeometryFactory geometryFactory;
+        private readonly double lengthSplit;
         private readonly HashSet<Link> links = new();
 
         #endregion Private Fields
 
         #region Public Constructors
 
-        public LinkFactory(GeometryFactory geometryFactory, double angleMin, double detourMax)
+        public LinkFactory(GeometryFactory geometryFactory, double angleMin, double lengthSplit)
         {
             this.geometryFactory = geometryFactory;
             this.angleMin = angleMin;
-            this.detourMax = detourMax;
+            this.lengthSplit = lengthSplit;
         }
 
         #endregion Public Constructors
@@ -68,47 +66,46 @@ namespace SFASimplifier.Factories
 
             var allGeometries = chains
                 .Select(c => c.Geometry).ToArray();
-            var minLength = allGeometries.Min(g => g.Length);
-            var geometries = allGeometries
-                .Where(l => l.Length <= (minLength * detourMax))
-                .Take(TakeMaxGeometries).ToArray();
+            var geometryGroups = allGeometries.GetLengthGroups(
+                lengthSplit: lengthSplit).ToArray();
 
-            var coordinates = GetCoordinates(
-                    from: from,
-                    to: to,
-                    geometries: geometries,
-                    parentPackage: parentPackage)
-                .Where(c => c != default)
-                .WithoutAcute(angleMin).ToArray();
-
-            var lineString = geometryFactory
-                .CreateLineString(coordinates);
-
-            var link = new Link
+            foreach (var geometryGroup in geometryGroups)
             {
-                From = from,
-                Geometry = lineString,
-                To = to,
-            };
+                var coordinates = GetCoordinates(
+                        from: from,
+                        to: to,
+                        geometries: geometryGroup,
+                        parentPackage: parentPackage)
+                    .WithoutAcute(angleMin).ToArray();
 
-            links.Add(link);
+                var lineString = geometryFactory
+                    .CreateLineString(coordinates);
 
-            var ways = chains
-                .SelectMany(c => c.Segments)
-                .SelectMany(s => s.Ways)
-                .Distinct().ToArray();
+                var link = new Link
+                {
+                    From = from,
+                    Geometry = lineString,
+                    To = to,
+                };
 
-            foreach (var way in ways)
-            {
-                way.Links.Add(link);
+                links.Add(link);
+
+                var ways = chains
+                    .SelectMany(c => c.Segments)
+                    .SelectMany(s => s.Ways)
+                    .Distinct().ToArray();
+
+                foreach (var way in ways)
+                {
+                    way.Links.Add(link);
+                }
             }
         }
 
         private IEnumerable<Coordinate> GetCoordinates(Models.Location from, Models.Location to,
             IEnumerable<Geometry> geometries, IPackage parentPackage)
         {
-            var relevantGeometry = geometries
-                .OrderByDescending(g => g.Coordinates.Length).First();
+            var relevantGeometry = geometries.First();
 
             using var infoPackage = parentPackage.GetPackage(
                 items: relevantGeometry.Coordinates,

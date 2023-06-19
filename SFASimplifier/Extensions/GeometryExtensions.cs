@@ -10,10 +10,16 @@ namespace SFASimplifier.Extensions
 {
     internal static class GeometryExtensions
     {
+        #region Private Fields
+
+        private const int TakeMaxGeometries = 1000;
+
+        #endregion Private Fields
+
         #region Public Methods
 
         public static IEnumerable<Node> FilterNodes(this Geometry geometry, IEnumerable<Feature> points,
-            double distanceNodeToLine)
+                   double distanceNodeToLine)
         {
             foreach (var point in points)
             {
@@ -35,16 +41,45 @@ namespace SFASimplifier.Extensions
             }
         }
 
-        public static double GetDistance(this Geometry geometry)
+        public static IEnumerable<IEnumerable<Geometry>> GetLengthGroups(this IEnumerable<Geometry> geometries,
+            double lengthSplit)
         {
-            var result = 0.0;
-
-            for (int index = 1; index < geometry.Coordinates.Length; index++)
+            if (geometries.Any())
             {
-                result += geometry.Coordinates[index - 1].GetDistance(geometry.Coordinates[index]);
-            }
+                var givens = geometries
+                    .OrderBy(g => g.Length).ToHashSet();
 
-            return result;
+                var result = new HashSet<Geometry>();
+                var currentSplit = 1 + lengthSplit;
+                var minLength = givens.First().Length;
+
+                while (givens.Any())
+                {
+                    if (givens.First().Length <= (lengthSplit * currentSplit))
+                    {
+                        result.Add(givens.First());
+                        givens.Remove(givens.First());
+                    }
+                    else
+                    {
+                        if (result.Any())
+                        {
+                            yield return result
+                                .Take(TakeMaxGeometries).ToArray();
+
+                            result = new HashSet<Geometry>();
+                        }
+
+                        currentSplit += lengthSplit;
+                    }
+                }
+
+                if (result.Any())
+                {
+                    yield return result;
+                    result = new HashSet<Geometry>();
+                }
+            }
         }
 
         public static Coordinate GetNearest(this Geometry current, Geometry other)

@@ -40,7 +40,7 @@ namespace SFASimplifier
             IEnumerable<(string, string)> pointAttributesFilter, IEnumerable<OgcGeometryType> lineTypes,
             IEnumerable<(string, string)> lineAttributesCheck, IEnumerable<(string, string)> lineAttributesFilter,
             int locationsDistanceToOthers, double locationsFuzzyScore, string locationsKeyAttribute,
-            int pointsDistanceMaxToLine, double linksAngleMin, double linksDetourMax, Action<double, string> onProgressChange)
+            int pointsDistanceMaxToLine, double linksAngleMin, double linksLengthSplit, Action<double, string> onProgressChange)
         {
             this.onProgressChange = onProgressChange;
 
@@ -83,7 +83,7 @@ namespace SFASimplifier
             linkFactory = new LinkFactory(
                 geometryFactory: geometryFactory,
                 angleMin: linksAngleMin,
-                detourMax: linksDetourMax);
+                lengthSplit: linksLengthSplit);
 
             featureWriter = new FeatureWriter(
                 geometryFactory: geometryFactory,

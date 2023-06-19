@@ -68,7 +68,7 @@ namespace SFASimplifierCLI
                 locationsKeyAttribute: "name",
                 pointsDistanceMaxToLine: 20,
                 linksAngleMin: 2.5,
-                linksDetourMax: 1.5,
+                linksLengthSplit: 0.2,
                 onProgressChange: onProgressChange);
 
             service.Run(args[0], args[1]);

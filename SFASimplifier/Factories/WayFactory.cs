@@ -12,7 +12,6 @@ namespace SFASimplifier.Factories
     {
         #region Private Fields
 
-        private readonly int borderMinLength;
         private readonly GeometryFactory geometryFactory;
         private readonly HashSet<Way> ways = new();
 
@@ -81,8 +80,8 @@ namespace SFASimplifier.Factories
                 var allCoordinates = geometry.Coordinates.ToArray();
 
                 var indexFrom = 0;
-                var indexTo = borderMinLength;
-                var length = allCoordinates.Length - 1 - borderMinLength;
+                var indexTo = 0;
+                var length = allCoordinates.Length - 1;
 
                 while (++indexTo < length)
                 {

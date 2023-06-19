@@ -99,7 +99,7 @@ namespace SFASimplifier.Factories
             var relevants = segments
                 .Where(s => !s.From.Location.IsBorder
                     && s.To.Location.IsBorder)
-                .OrderBy(s => s.Distance).ToArray();
+                .OrderBy(s => s.Geometry.Length).ToArray();
 
             using var infoPackage = parentPackage.GetPackage(
                 items: relevants,
@@ -132,7 +132,7 @@ namespace SFASimplifier.Factories
                 var relevants = nexts[chain.To.Location]
                     .Where(s => !covereds.Contains(s)
                         && !chain.Locations.Contains(s.To.Location))
-                    .OrderBy(s => s.Distance).ToArray();
+                    .OrderBy(s => s.Geometry.Length).ToArray();
 
                 using var infoPackage = parentPackage.GetPackage(
                     items: relevants,
