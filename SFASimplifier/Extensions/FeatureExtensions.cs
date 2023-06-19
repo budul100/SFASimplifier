@@ -26,14 +26,29 @@ namespace SFASimplifier.Extensions
             return result;
         }
 
-        public static string GetAttribute(this Feature feature, string attributeName)
+        public static string GetAttribute(this Feature feature, IEnumerable<string> keys)
+        {
+            foreach (var key in keys)
+            {
+                var result = feature.GetAttribute(key);
+
+                if (!result.IsEmpty())
+                {
+                    return result;
+                }
+            }
+
+            return default;
+        }
+
+        public static string GetAttribute(this Feature feature, string key)
         {
             var result = default(string);
 
-            if (!attributeName.IsEmpty())
+            if (!key.IsEmpty())
             {
                 result = feature.Attributes?
-                    .GetOptionalValue(attributeName)?.ToString();
+                    .GetOptionalValue(key)?.ToString();
             }
 
             return result;
@@ -62,10 +77,10 @@ namespace SFASimplifier.Extensions
             }
         }
 
-        public static string GetPrimaryAttribute(this IEnumerable<Feature> features, string attributeName)
+        public static string GetPrimaryAttribute(this IEnumerable<Feature> features, IEnumerable<string> keys)
         {
             var result = features
-                .Select(f => f.GetAttribute(attributeName))
+                .Select(f => f.GetAttribute(keys))
                 .Where(a => !a.IsEmpty())
                 .GroupBy(a => a)
                 .OrderByDescending(g => g.Count())

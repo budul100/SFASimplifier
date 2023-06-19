@@ -1,11 +1,13 @@
-﻿using NetTopologySuite.Geometries;
+﻿using NetTopologySuite.Algorithm;
+using NetTopologySuite.Geometries;
 using ProgressWatcher;
 using ProgressWatcher.Interfaces;
+using SFASimplifier.Extensions;
 using SFASimplifier.Factories;
+using SFASimplifier.Models;
 using SFASimplifier.Repositories;
 using SFASimplifier.Writers;
 using System;
-using System.Collections.Generic;
 
 namespace SFASimplifier
 {
@@ -36,25 +38,25 @@ namespace SFASimplifier
 
         #region Public Constructors
 
-        public Service(IEnumerable<OgcGeometryType> pointTypes, IEnumerable<(string, string)> pointAttributesCheck,
-            IEnumerable<(string, string)> pointAttributesFilter, IEnumerable<OgcGeometryType> lineTypes,
-            IEnumerable<(string, string)> lineAttributesCheck, IEnumerable<(string, string)> lineAttributesFilter,
-            int locationsDistanceToOthers, double locationsFuzzyScore, string locationsKeyAttribute,
-            int pointsDistanceMaxToLine, double linksAngleMin, double linksLengthSplit, Action<double, string> onProgressChange)
+        public Service(Options options, Action<double, string> onProgressChange)
         {
             this.onProgressChange = onProgressChange;
 
             collectionRepository = new CollectionRepository();
 
+            var pointAttributesFilter = options.PointAttributesFilter.GetKeyValuePairs();
+
             pointRepository = new FeatureRepository(
-                types: pointTypes,
-                checkAttributes: pointAttributesCheck,
-                filterAttributes: pointAttributesFilter);
+                types: options.PointTypes,
+                attributesKey: options.PointAttributesKey,
+                attributesFilter: pointAttributesFilter);
+
+            var lineAttributesFilter = options.LineAttributesFilter.GetKeyValuePairs();
 
             lineRepository = new FeatureRepository(
-                types: lineTypes,
-                checkAttributes: lineAttributesCheck,
-                filterAttributes: lineAttributesFilter);
+                types: options.LineTypes,
+                attributesKey: options.LineAttributesKey,
+                attributesFilter: lineAttributesFilter);
 
             geometryFactory = new GeometryFactory();
 
@@ -66,24 +68,26 @@ namespace SFASimplifier
 
             locationFactory = new LocationFactory(
                 geometryFactory: geometryFactory,
-                maxDistance: locationsDistanceToOthers,
-                fuzzyScore: locationsFuzzyScore);
+                maxDistance: options.LocationsDistanceToOthers,
+                fuzzyScore: options.LocationsFuzzyScore);
 
             segmentFactory = new SegmentFactory(
                 geometryFactory: geometryFactory,
                 pointFactory: pointFactory,
                 locationFactory: locationFactory,
-                keyAttribute: locationsKeyAttribute,
-                distanceNodeToLine: pointsDistanceMaxToLine);
+                keyAttributes: options.PointAttributesKey,
+                distanceNodeToLine: options.LocationsDistanceToLine);
+
+            var angleMin = AngleUtility.ToRadians(options.LinksAngleMin);
 
             chainFactory = new ChainFactory(
                 geometryFactory: geometryFactory,
-                angleMin: linksAngleMin);
+                angleMin: angleMin);
 
             linkFactory = new LinkFactory(
                 geometryFactory: geometryFactory,
-                angleMin: linksAngleMin,
-                lengthSplit: linksLengthSplit);
+                angleMin: angleMin,
+                lengthSplit: options.LinksLengthSplit);
 
             featureWriter = new FeatureWriter(
                 geometryFactory: geometryFactory,

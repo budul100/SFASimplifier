@@ -15,7 +15,7 @@ namespace SFASimplifier.Factories
 
         private readonly double distanceNodeToLine;
         private readonly GeometryFactory geometryFactory;
-        private readonly string keyAttribute;
+        private readonly IEnumerable<string> keyAttributes;
         private readonly LocationFactory locationFactory;
         private readonly PointFactory pointFactory;
         private readonly Dictionary<int, Segment> segments = new();
@@ -25,12 +25,12 @@ namespace SFASimplifier.Factories
         #region Public Constructors
 
         public SegmentFactory(GeometryFactory geometryFactory, PointFactory pointFactory,
-            LocationFactory locationFactory, string keyAttribute, double distanceNodeToLine)
+            LocationFactory locationFactory, IEnumerable<string> keyAttributes, double distanceNodeToLine)
         {
             this.geometryFactory = geometryFactory;
             this.pointFactory = pointFactory;
             this.locationFactory = locationFactory;
-            this.keyAttribute = keyAttribute;
+            this.keyAttributes = keyAttributes;
             this.distanceNodeToLine = distanceNodeToLine;
         }
 
@@ -179,7 +179,7 @@ namespace SFASimplifier.Factories
             var pointGroups = pointFactory.Points.GetAround(
                 geometry: geometry,
                 meters: distanceNodeToLine)
-                .GroupBy(p => p.GetAttribute(keyAttribute) ?? p.GetHashCode().ToString()).ToArray();
+                .GroupBy(p => p.GetAttribute(keyAttributes) ?? p.GetHashCode().ToString()).ToArray();
 
             foreach (var pointGroup in pointGroups)
             {
@@ -187,7 +187,7 @@ namespace SFASimplifier.Factories
                     points: pointGroup,
                     distanceNodeToLine: distanceNodeToLine).ToArray();
 
-                var key = pointGroup.GetPrimaryAttribute(keyAttribute);
+                var key = pointGroup.GetPrimaryAttribute(keyAttributes);
 
                 foreach (var relevant in relevants)
                 {

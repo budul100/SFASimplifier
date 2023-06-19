@@ -13,20 +13,20 @@ namespace SFASimplifier.Repositories
     {
         #region Private Fields
 
-        private readonly IEnumerable<(string, string)> attributesCheck;
-        private readonly IEnumerable<(string, string)> attributesFilter;
+        private readonly IEnumerable<KeyValuePair<string, string>> attributesFilter;
+        private readonly IEnumerable<string> attributesKey;
         private readonly IEnumerable<OgcGeometryType> types;
 
         #endregion Private Fields
 
         #region Public Constructors
 
-        public FeatureRepository(IEnumerable<OgcGeometryType> types, IEnumerable<(string, string)> checkAttributes,
-            IEnumerable<(string, string)> filterAttributes)
+        public FeatureRepository(IEnumerable<OgcGeometryType> types, IEnumerable<string> attributesKey,
+            IEnumerable<KeyValuePair<string, string>> attributesFilter)
         {
             this.types = types;
-            this.attributesCheck = checkAttributes;
-            this.attributesFilter = filterAttributes;
+            this.attributesKey = attributesKey;
+            this.attributesFilter = attributesFilter;
         }
 
         #endregion Public Constructors
@@ -63,25 +63,16 @@ namespace SFASimplifier.Repositories
             {
                 var isValid = false;
 
-                if (attributesCheck?.Any() == true)
+                if (attributesKey?.Any() == true)
                 {
-                    foreach (var attributeCheck in attributesCheck)
+                    foreach (var attributeCheck in attributesKey)
                     {
-                        var input = relevant.GetAttribute(attributeCheck.Item1);
+                        var input = relevant.GetAttribute(attributeCheck);
 
                         if (!input.IsEmpty())
                         {
-                            if (Regex.IsMatch(
-                                input: input,
-                                pattern: attributeCheck.Item2))
-                            {
-                                isValid = true;
-                            }
-                            else
-                            {
-                                isValid = false;
-                                break;
-                            }
+                            isValid = true;
+                            break;
                         }
                     }
                 }
@@ -96,12 +87,12 @@ namespace SFASimplifier.Repositories
                     {
                         foreach (var attributeFilter in attributesFilter)
                         {
-                            var input = relevant.GetAttribute(attributeFilter.Item1);
+                            var input = relevant.GetAttribute(attributeFilter.Key);
 
                             if (!input.IsEmpty()
                                 && Regex.IsMatch(
                                     input: input,
-                                    pattern: attributeFilter.Item2))
+                                    pattern: attributeFilter.Value))
                             {
                                 yield return relevant;
                                 break;
