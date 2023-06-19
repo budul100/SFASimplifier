@@ -8,6 +8,7 @@ using SFASimplifier.Models;
 using SFASimplifier.Repositories;
 using SFASimplifier.Writers;
 using System;
+using System.Collections.Generic;
 
 namespace SFASimplifier
 {
@@ -16,20 +17,18 @@ namespace SFASimplifier
         #region Private Fields
 
         private const double StatusWeightDeterminingLinks = 0.2;
-        private const double StatusWeightDeterminingSegments = 0.6;
-        private const double StatusWeightLoadingFeatures = 0.1;
-        private const double StatusWeightWritingFeatures = 0.1;
+        private const double StatusWeightDeterminingSegments = 0.5;
+        private const double StatusWeightLoadingFiles = 0.2;
+        private const double StatusWeightWritingFile = 0.1;
 
         private readonly ChainFactory chainFactory;
-        private readonly CollectionRepository collectionRepository;
         private readonly FeatureWriter featureWriter;
         private readonly GeometryFactory geometryFactory;
-        private readonly FeatureRepository lineRepository;
         private readonly LinkFactory linkFactory;
         private readonly LocationFactory locationFactory;
         private readonly Action<double, string> onProgressChange;
+        private readonly Options options;
         private readonly PointFactory pointFactory;
-        private readonly FeatureRepository pointRepository;
         private readonly Watcher progressWatcher;
         private readonly SegmentFactory segmentFactory;
         private readonly WayFactory wayFactory;
@@ -40,23 +39,12 @@ namespace SFASimplifier
 
         public Service(Options options, Action<double, string> onProgressChange)
         {
+            this.options = options;
             this.onProgressChange = onProgressChange;
 
-            collectionRepository = new CollectionRepository();
-
-            var pointAttributesFilter = options.PointAttributesFilter.GetKeyValuePairs();
-
-            pointRepository = new FeatureRepository(
-                types: options.PointTypes,
-                attributesKey: options.PointAttributesKey,
-                attributesFilter: pointAttributesFilter);
-
-            var lineAttributesFilter = options.LineAttributesFilter.GetKeyValuePairs();
-
-            lineRepository = new FeatureRepository(
-                types: options.LineTypes,
-                attributesKey: options.LineAttributesKey,
-                attributesFilter: lineAttributesFilter);
+            progressWatcher = new Watcher();
+            progressWatcher.PropertyChanged += OnProgressChanged;
+            progressWatcher.ProgressCompleted += OnProgressCompleted; ;
 
             geometryFactory = new GeometryFactory();
 
@@ -92,24 +80,20 @@ namespace SFASimplifier
             featureWriter = new FeatureWriter(
                 geometryFactory: geometryFactory,
                 wayFactory: wayFactory);
-
-            progressWatcher = new Watcher();
-
-            progressWatcher.PropertyChanged += OnProgressChanged;
         }
 
         #endregion Public Constructors
 
         #region Public Methods
 
-        public void Run(string importPath, string exportPath)
+        public void Run(IEnumerable<string> inputPaths, string outputPath)
         {
-            var parentPackage = progressWatcher.Initialize(
+            using var parentPackage = progressWatcher.Initialize(
                 allSteps: 4,
                 status: "Merge SFA data.");
 
-            LoadFeatures(
-                importPath: importPath,
+            LoadFiles(
+                inputPaths: inputPaths,
                 parentPackage: parentPackage);
 
             DetermineSegments(
@@ -118,8 +102,8 @@ namespace SFASimplifier
             DetermineLinks(
                 parentPackage: parentPackage);
 
-            WriteFeatures(
-                exportPath: exportPath,
+            WriteFile(
+                outputPath: outputPath,
                 parentPackage: parentPackage);
         }
 
@@ -129,7 +113,7 @@ namespace SFASimplifier
 
         private void DetermineLinks(IPackage parentPackage)
         {
-            var infoPackage = parentPackage.GetPackage(
+            using var infoPackage = parentPackage.GetPackage(
                 steps: 3,
                 status: "Determining links.",
                 weight: StatusWeightDeterminingLinks);
@@ -148,7 +132,7 @@ namespace SFASimplifier
 
         private void DetermineSegments(IPackage parentPackage)
         {
-            var infoPackage = parentPackage.GetPackage(
+            using var infoPackage = parentPackage.GetPackage(
                 status: "Determining segments.",
                 weight: StatusWeightDeterminingSegments);
 
@@ -157,34 +141,63 @@ namespace SFASimplifier
                 parentPackage: infoPackage);
         }
 
-        private void LoadFeatures(string importPath, IPackage parentPackage)
+        private void LoadFeatures(string inputPath, IPackage parentPackage)
         {
-            var infoPackage = parentPackage.GetPackage(
+            using var infoPackage = parentPackage.GetPackage(
                 steps: 6,
-                status: "Loading features.",
-                weight: StatusWeightLoadingFeatures);
+                status: "Loading features.");
+
+            var collectionRepository = new CollectionRepository();
 
             collectionRepository.Load(
-                file: importPath,
+                file: inputPath,
                 parentPackage: infoPackage);
+
+            var pointAttributesFilter = options.PointAttributesFilter.GetKeyValuePairs();
+
+            var pointRepository = new FeatureRepository(
+                types: options.PointTypes,
+                attributesKey: options.PointAttributesKey,
+                attributesFilter: pointAttributesFilter);
 
             pointRepository.Load(
                 collection: collectionRepository.Collection,
                 parentPackage: infoPackage);
+            pointFactory.LoadPoints(
+                features: pointRepository.Features,
+                parentPackage: infoPackage);
+
+            var lineAttributesFilter = options.LineAttributesFilter.GetKeyValuePairs();
+
+            var lineRepository = new FeatureRepository(
+                types: options.LineTypes,
+                attributesKey: options.LineAttributesKey,
+                attributesFilter: lineAttributesFilter);
+
             lineRepository.Load(
                 collection: collectionRepository.Collection,
                 parentPackage: infoPackage);
-
             wayFactory.Load(
                 lines: lineRepository.Features,
-                parentPackage: infoPackage);
-
-            pointFactory.LoadPoints(
-                features: pointRepository.Features,
                 parentPackage: infoPackage);
             pointFactory.LoadWays(
                 ways: wayFactory.Ways,
                 parentPackage: infoPackage);
+        }
+
+        private void LoadFiles(IEnumerable<string> inputPaths, IPackage parentPackage)
+        {
+            using var infoPackage = parentPackage.GetPackage(
+                items: inputPaths,
+                status: "Loading files.",
+                weight: StatusWeightLoadingFiles);
+
+            foreach (var inputPath in inputPaths)
+            {
+                LoadFeatures(
+                    inputPath: inputPath,
+                    parentPackage: infoPackage);
+            }
         }
 
         private void OnProgressChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
@@ -199,14 +212,26 @@ namespace SFASimplifier
             }
         }
 
-        private void WriteFeatures(string exportPath, IPackage parentPackage)
+        private void OnProgressCompleted(object sender, EventArgs e)
         {
-            var infoPackage = parentPackage.GetPackage(
+            if (onProgressChange != default)
+            {
+                progressWatcher.PropertyChanged -= OnProgressChanged;
+
+                onProgressChange.Invoke(
+                    arg1: 1,
+                    arg2: default);
+            }
+        }
+
+        private void WriteFile(string outputPath, IPackage parentPackage)
+        {
+            using var infoPackage = parentPackage.GetPackage(
                 status: "Writing collection.",
-                weight: StatusWeightWritingFeatures);
+                weight: StatusWeightWritingFile);
 
             featureWriter.Write(
-                path: exportPath,
+                path: outputPath,
                 parentPackage: infoPackage);
         }
 
