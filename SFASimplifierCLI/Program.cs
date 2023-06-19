@@ -45,7 +45,7 @@ namespace SFASimplifierCLI
                 ("type", "route"),
             };
 
-            var progressBar = new ProgressBar(
+            using var progressBar = new ProgressBar(
                 maxTicks: 10000,
                 message: "Simplify SFA data.");
             var progressReport = progressBar.AsProgress<float>();
