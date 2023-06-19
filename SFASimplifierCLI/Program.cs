@@ -5,6 +5,12 @@ namespace SFASimplifierCLI
 {
     internal static class Program
     {
+        #region Private Fields
+
+        private const int ProgressMaxTicks = 10000;
+
+        #endregion Private Fields
+
         #region Internal Methods
 
         internal static void Main(string[] args)
@@ -12,7 +18,7 @@ namespace SFASimplifierCLI
             var options = new Options();
 
             using var progressBar = new ProgressBar(
-                maxTicks: 10000,
+                maxTicks: ProgressMaxTicks,
                 message: "Simplify SFA data.");
             var progressReport = progressBar.AsProgress<float>();
 
