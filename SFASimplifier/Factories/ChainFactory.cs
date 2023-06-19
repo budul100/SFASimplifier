@@ -207,14 +207,14 @@ namespace SFASimplifier.Factories
 
         private bool HasValidAngle(Chain chain, Segment segment)
         {
-            bool result;
-
             if (chain.Geometry.Coordinates.Last().Equals2D(segment.Geometry.Coordinates[0]))
             {
-                result = !chain.Geometry.Coordinates[^1].IsAcuteAngle(
+                var result = !chain.Geometry.Coordinates[^1].IsAcuteAngle(
                     before: chain.Geometry.Coordinates[^2],
                     after: segment.Geometry.Coordinates[1],
                     angleMin: angleMin);
+
+                return result;
             }
             else
             {
@@ -229,35 +229,48 @@ namespace SFASimplifier.Factories
                     .TakeWhile(c => !preparedGeometry.Intersects(geometryFactory.CreatePoint(c)))
                     .TakeLast(2).Reverse().ToArray();
 
-                result = true;
-
                 if (befores.Length > 1)
                 {
-                    result &= !befores[^1].IsAcuteAngle(
+                    var result = !befores[^1].IsAcuteAngle(
                         before: befores[^2],
                         after: chain.To.Location.Centroid.Coordinate,
                         angleMin: angleMin);
+
+                    if (!result)
+                    {
+                        return false;
+                    }
                 }
 
                 if (befores.Length > 0
                     && afters.Length > 0)
                 {
-                    result &= !chain.To.Location.Centroid.Coordinate.IsAcuteAngle(
+                    var result = !chain.To.Location.Centroid.Coordinate.IsAcuteAngle(
                         before: befores[^1],
                         after: afters[0],
                         angleMin: angleMin);
+
+                    if (!result)
+                    {
+                        return false;
+                    }
                 }
 
                 if (afters.Length > 1)
                 {
-                    result &= !afters[0].IsAcuteAngle(
+                    var result = !afters[0].IsAcuteAngle(
                         before: chain.To.Location.Centroid.Coordinate,
                         after: afters[1],
                         angleMin: angleMin);
-                }
-            }
 
-            return result;
+                    if (!result)
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
         }
 
         #endregion Private Methods

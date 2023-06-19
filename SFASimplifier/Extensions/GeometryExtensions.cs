@@ -19,7 +19,7 @@ namespace SFASimplifier.Extensions
         #region Public Methods
 
         public static IEnumerable<Node> FilterNodes(this Geometry geometry, IEnumerable<Feature> points,
-                   double distanceNodeToLine)
+            double distanceNodeToLine)
         {
             foreach (var point in points)
             {
