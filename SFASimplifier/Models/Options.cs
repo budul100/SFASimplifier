@@ -25,6 +25,7 @@ namespace SFASimplifier.Models
             Default = new string[]
             {
                 "type", "route",
+                "type", "route_master",
             })]
         public IEnumerable<string> LineAttributesFilter { get; set; }
 
