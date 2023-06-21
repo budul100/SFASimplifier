@@ -8,6 +8,9 @@ namespace SFASimplifier.Structs
 
         public ChainKey(Location from, Location to)
         {
+            from = from.Main ?? from;
+            to = to.Main ?? to;
+
             if (from.GetHashCode() < to.GetHashCode())
             {
                 From = from;
@@ -25,6 +28,8 @@ namespace SFASimplifier.Structs
         #region Public Properties
 
         public Location From { get; }
+
+        public string Key => $"{From.Key} -> {To.Key}";
 
         public Location To { get; }
 

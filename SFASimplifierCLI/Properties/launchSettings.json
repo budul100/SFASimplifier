@@ -1,12 +1,8 @@
 {
   "profiles": {
-    "Convert Brandenburg / Berlin": {
+    "Convert Export": {
       "commandName": "Project",
-      "commandLineArgs": "-i \"..\\..\\..\\..\\Additionals\\Samples\\Brandenburg-Berlin.geojson\" -o \"..\\..\\..\\..\\Additionals\\Samples\\Brandenburg-Berlin_.geojson\""
-    },
-    "Convert Germany-East": {
-      "commandName": "Project",
-      "commandLineArgs": "-i \"..\\..\\..\\..\\Additionals\\Samples\\Germany-East.geojson\" -o \"..\\..\\..\\..\\Additionals\\Samples\\Germany-East_.geojson\""
+      "commandLineArgs": "-i \"C:\\Users\\mgr\\Downloads\\export.geojson\" -o \"C:\\Users\\mgr\\Downloads\\export_.geojson\" "
     },
     "Convert Bremen": {
       "commandName": "Project",
@@ -16,21 +12,9 @@
       "commandName": "Project",
       "commandLineArgs": "-i \"..\\..\\..\\..\\Additionals\\Samples\\Bremen.geojson\" -o \"..\\..\\..\\..\\Additionals\\Samples\\Bremen_.geojson\" --linefilter \"2200 Wanne-Eickel - Hamburg,1404 Abzw Bremen Gabelung - Sagehorn\""
     },
-    "Convert Hungary": {
+    "Convert Hungary + Romania": {
       "commandName": "Project",
-      "commandLineArgs": "-i \"..\\..\\..\\..\\Additionals\\Samples\\Hungary.geojson\" -o \"..\\..\\..\\..\\Additionals\\Samples\\Hungary_.geojson\""
-    },
-    "Convert Romania": {
-      "commandName": "Project",
-      "commandLineArgs": "-i \"..\\..\\..\\..\\Additionals\\Samples\\Romania.geojson\" -o \"..\\..\\..\\..\\Additionals\\Samples\\Romania_.geojson\""
-    },
-    "Convert Slovakia": {
-      "commandName": "Project",
-      "commandLineArgs": "-i \"..\\..\\..\\..\\Additionals\\Samples\\Slovakia.geojson\" -o \"..\\..\\..\\..\\Additionals\\Samples\\Slovakia_.geojson\""
-    },
-    "Convert Turkey": {
-      "commandName": "Project",
-      "commandLineArgs": "-i \"..\\..\\..\\..\\Additionals\\Samples\\Turkey.geojson\" -o \"..\\..\\..\\..\\Additionals\\Samples\\Turkey_.geojson\""
+      "commandLineArgs": "-i \"..\\..\\..\\..\\Additionals\\Samples\\Hungary.geojson,..\\..\\..\\..\\Additionals\\Samples\\Romania.geojson\", -o \"..\\..\\..\\..\\Additionals\\Samples\\Hungary-Romania_.geojson\""
     }
   }
 }

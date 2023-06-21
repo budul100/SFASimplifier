@@ -18,6 +18,8 @@ namespace SFASimplifier.Models
 
         public string Key { get; set; }
 
+        public Location Main { get; set; }
+
         #endregion Public Properties
     }
 }

@@ -14,6 +14,7 @@ namespace SFASimplifier.Factories
     {
         #region Private Fields
 
+        private readonly HashSet<HashSet<Models.Location>> areas = new();
         private readonly double fuzzyScore;
         private readonly GeometryFactory geometryFactory;
         private readonly HashSet<Models.Location> locations = new();
@@ -41,17 +42,7 @@ namespace SFASimplifier.Factories
 
         #region Public Methods
 
-        public Models.Location Get(Feature feature, bool isBorder, string key)
-        {
-            var result = GetLocation(
-                feature: feature,
-                isBorder: isBorder,
-                key: key);
-
-            return result;
-        }
-
-        public void Tidy(IEnumerable<Segment> segments, IPackage parentPackage)
+        public void Condense(IEnumerable<Segment> segments, IPackage parentPackage)
         {
             var fromNodes = segments
                 .Select(s => s.From);
@@ -63,7 +54,7 @@ namespace SFASimplifier.Factories
 
             using var infoPackage = parentPackage.GetPackage(
                 items: locationGroups,
-                status: "Tidy locations.");
+                status: "Create location geometry.");
 
             foreach (var locationGroup in locationGroups)
             {
@@ -71,29 +62,87 @@ namespace SFASimplifier.Factories
                     .Select(n => n.Coordinate)
                     .Distinct().ToArray();
 
-                if (coordinates.Length == 1)
-                {
-                    locationGroup.Key.Geometry = geometryFactory.CreatePoint(
-                        coordinate: coordinates.Single());
-                    locationGroup.Key.Centroid = locationGroup.Key.Geometry;
-                }
-                else if (coordinates.Length == 2)
-                {
-                    locationGroup.Key.Geometry = geometryFactory.CreateLineString(
-                        coordinates: coordinates);
-                    locationGroup.Key.Centroid = locationGroup.Key.Geometry.Boundary.Centroid;
-                }
-                else
-                {
-                    var ring = coordinates.ToList();
-                    ring.Add(coordinates[0]);
-
-                    locationGroup.Key.Geometry = geometryFactory.CreatePolygon(
-                        coordinates: ring.ToArray());
-                    locationGroup.Key.Centroid = locationGroup.Key.Geometry.Boundary.Centroid;
-                }
+                SetGeometry(
+                    location: locationGroup.Key,
+                    coordinates: coordinates);
 
                 infoPackage.NextStep();
+            }
+        }
+
+        public Models.Location Get(Feature feature, bool isBorder, string key)
+        {
+            var result = GetLocation(
+                feature: feature,
+                isBorder: isBorder,
+                key: key);
+
+            return result;
+        }
+
+        public bool IsSimilar(Models.Location from, Models.Location to)
+        {
+            var result = from == to;
+
+            if (from != to
+                && !(from.IsBorder || to.IsBorder)
+                && !from.Key.IsEmpty()
+                && !to.Key.IsEmpty()
+                && from.Key == to.Key)
+            {
+                var area = areas
+                    .SingleOrDefault(a => a.Contains(from) || a.Contains(to));
+
+                if (area == default)
+                {
+                    area = new HashSet<Models.Location>();
+                    areas.Add(area);
+                }
+
+                area.Add(from);
+                area.Add(to);
+
+                result = true;
+            }
+
+            return result;
+        }
+
+        public void Tidy(IPackage parentPackage)
+        {
+            using var infoPackage = parentPackage.GetPackage(
+                items: areas,
+                status: "Merge locations.");
+
+            foreach (var area in areas)
+            {
+                var key = area
+                    .OrderByDescending(l => l.Features.Count).First().Key;
+                var isBorder = area
+                    .All(l => l.IsBorder);
+
+                var result = new Models.Location
+                {
+                    Key = key,
+                    IsBorder = isBorder,
+                };
+
+                result.Features.UnionWith(area.SelectMany(l => l.Features));
+
+                var coordinates = area
+                    .SelectMany(l => l.Geometry.Coordinates)
+                    .Distinct().ToArray();
+
+                SetGeometry(
+                    location: result,
+                    coordinates: coordinates);
+
+                locations.Add(result);
+
+                foreach (var location in area)
+                {
+                    location.Main = result;
+                }
             }
         }
 
@@ -128,6 +177,31 @@ namespace SFASimplifier.Factories
             result.Features.Add(feature);
 
             return result;
+        }
+
+        private void SetGeometry(Models.Location location, IEnumerable<Coordinate> coordinates)
+        {
+            if (coordinates.Count() == 1)
+            {
+                location.Geometry = geometryFactory.CreatePoint(
+                    coordinate: coordinates.Single());
+                location.Centroid = location.Geometry;
+            }
+            else if (coordinates.Count() == 2)
+            {
+                location.Geometry = geometryFactory.CreateLineString(
+                    coordinates: coordinates.ToArray());
+                location.Centroid = location.Geometry.Boundary.Centroid;
+            }
+            else
+            {
+                var ring = coordinates.ToList();
+                ring.Add(coordinates.First());
+
+                location.Geometry = geometryFactory.CreatePolygon(
+                    coordinates: ring.ToArray());
+                location.Centroid = location.Geometry.Boundary.Centroid;
+            }
         }
 
         #endregion Private Methods

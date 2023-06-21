@@ -128,8 +128,8 @@ namespace SFASimplifier.Writers
                 .SelectMany(w => w.Links)
                 .Distinct().ToArray();
 
-            var relevants = links.Select(l => l.From)
-                .Union(links.Select(l => l.To))
+            var relevants = links.Select(l => l.From.Main ?? l.From)
+                .Union(links.Select(l => l.To.Main ?? l.To))
                 .OrderBy(l => l.Key?.ToString()).ToArray();
 
             using var infoPackage = parentPackage.GetPackage(

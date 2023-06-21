@@ -3,6 +3,7 @@ using NetTopologySuite.Geometries;
 using ProgressWatcher.Interfaces;
 using SFASimplifier.Extensions;
 using SFASimplifier.Models;
+using SFASimplifier.Structs;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -41,7 +42,9 @@ namespace SFASimplifier.Factories
         public void Load(IEnumerable<Chain> chains, IPackage parentPackage)
         {
             var chainGroups = chains
-                .GroupBy(c => c.Key).ToArray();
+                .Where(c => c.From.Location.Main == default || c.To.Location.Main == default || c.From.Location.Main != c.To.Location.Main)
+                .GroupBy(c => new ChainKey(c.From.Location, c.To.Location))
+                .OrderBy(g => g.Key.Key).ToArray();
 
             using var infoPackage = parentPackage.GetPackage(
                 items: chainGroups,
@@ -50,8 +53,9 @@ namespace SFASimplifier.Factories
             foreach (var chainGroup in chainGroups)
             {
                 AddLink(
-                    chains: chainGroup,
-                    parentPackage: infoPackage);
+                    chains: chainGroup);
+
+                infoPackage.NextStep();
             }
         }
 
@@ -59,27 +63,24 @@ namespace SFASimplifier.Factories
 
         #region Private Methods
 
-        private void AddLink(IEnumerable<Chain> chains, IPackage parentPackage)
+        private void AddLink(IEnumerable<Chain> chains)
         {
-            var from = chains.First().From.Location;
-            var to = chains.First().To.Location;
+            var from = chains.First().From.Location.Main
+                ?? chains.First().From.Location;
+            var to = chains.First().To.Location.Main
+                ?? chains.First().To.Location;
 
             var allGeometries = chains
                 .Select(c => c.Geometry).ToArray();
             var geometryGroups = allGeometries.GetLengthGroups(
                 lengthSplit: lengthSplit).ToArray();
 
-            using var infoPackage = parentPackage.GetPackage(
-                items: geometryGroups,
-                status: "Create link");
-
             foreach (var geometryGroup in geometryGroups)
             {
                 var coordinates = GetCoordinates(
                         from: from,
                         to: to,
-                        geometries: geometryGroup,
-                        parentPackage: infoPackage)
+                        geometries: geometryGroup)
                     .WithoutAcute(angleMin).ToArray();
 
                 var lineString = geometryFactory
@@ -107,13 +108,9 @@ namespace SFASimplifier.Factories
         }
 
         private IEnumerable<Coordinate> GetCoordinates(Models.Location from, Models.Location to,
-            IEnumerable<Geometry> geometries, IPackage parentPackage)
+            IEnumerable<Geometry> geometries)
         {
             var relevantGeometry = geometries.First();
-
-            using var infoPackage = parentPackage.GetPackage(
-                items: relevantGeometry.Coordinates,
-                status: "Determine link coordinates");
 
             var otherGeometries = geometries
                 .Where(g => g != relevantGeometry)
@@ -148,8 +145,6 @@ namespace SFASimplifier.Factories
                 {
                     yield return currentCoordinates.Single();
                 }
-
-                infoPackage.NextStep();
             }
 
             yield return fromIsFirst

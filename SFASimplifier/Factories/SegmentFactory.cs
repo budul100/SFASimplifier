@@ -65,7 +65,7 @@ namespace SFASimplifier.Factories
                     .Select(g => g.OrderByDescending(n => !n.Location.IsBorder).First())
                     .OrderBy(n => n.Position).ToArray();
 
-                if (nodes.Length > 1)
+                if (nodes.Distinct().Count() > 1)
                 {
                     var currentWays = geometry
                         .Select(g => g.Way).ToArray();

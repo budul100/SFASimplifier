@@ -70,6 +70,7 @@ namespace SFASimplifier
 
             chainFactory = new ChainFactory(
                 geometryFactory: geometryFactory,
+                locationFactory: locationFactory,
                 angleMin: angleMin);
 
             linkFactory = new LinkFactory(
@@ -114,17 +115,21 @@ namespace SFASimplifier
         private void DetermineLinks(IPackage parentPackage)
         {
             using var infoPackage = parentPackage.GetPackage(
-                steps: 3,
+                steps: 4,
                 status: "Determining links.",
                 weight: StatusWeightDeterminingLinks);
 
-            locationFactory.Tidy(
+            locationFactory.Condense(
                 segments: segmentFactory.Segments,
                 parentPackage: infoPackage);
 
             chainFactory.Load(
                 segments: segmentFactory.Segments,
                 parentPackage: infoPackage);
+
+            locationFactory.Tidy(
+                parentPackage: infoPackage);
+
             linkFactory.Load(
                 chains: chainFactory.Chains,
                 parentPackage: infoPackage);

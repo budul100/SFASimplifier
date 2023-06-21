@@ -81,14 +81,14 @@ namespace SFASimplifier.Models
             longName: "locdistline",
             HelpText = "Maximum distance of a points to a line in meters to be considered as location on this line.",
             Required = false,
-            Default = 10)]
+            Default = 20)]
         public int LocationsDistanceToLine { get; set; }
 
         [Option(
             longName: "locdistothers",
             HelpText = "Maximum distance of two points in meters to be merged into the same location.",
             Required = false,
-            Default = 200)]
+            Default = 250)]
         public int LocationsDistanceToOthers { get; set; }
 
         [Option(
