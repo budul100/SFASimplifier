@@ -2,19 +2,19 @@
   "profiles": {
     "Convert Export": {
       "commandName": "Project",
-      "commandLineArgs": "-i \"C:\\Users\\mgr\\Downloads\\export.geojson\" -o \"C:\\Users\\mgr\\Downloads\\export_.geojson\" "
+      "commandLineArgs": "-i \"C:\\Users\\mgr\\Downloads\\export.geojson\" -f \"C:\\Users\\mgr\\Downloads\\export_.geojson\" "
     },
     "Convert Bremen": {
       "commandName": "Project",
-      "commandLineArgs": "-i \"..\\..\\..\\..\\Additionals\\Samples\\Bremen.geojson\" -o \"..\\..\\..\\..\\Additionals\\Samples\\Bremen_.geojson\""
+      "commandLineArgs": "-i \"..\\..\\..\\..\\Additionals\\Samples\\Bremen.geojson\" -f \"..\\..\\..\\..\\Additionals\\Samples\\Bremen_.geojson\" -r \"..\\..\\..\\..\\Additionals\\Samples\\Bremen_.txt\""
     },
     "Convert Bremen filtered": {
       "commandName": "Project",
-      "commandLineArgs": "-i \"..\\..\\..\\..\\Additionals\\Samples\\Bremen.geojson\" -o \"..\\..\\..\\..\\Additionals\\Samples\\Bremen_.geojson\" --linefilter \"2200 Wanne-Eickel - Hamburg,1404 Abzw Bremen Gabelung - Sagehorn\""
+      "commandLineArgs": "-i \"..\\..\\..\\..\\Additionals\\Samples\\Bremen.geojson\" -f \"..\\..\\..\\..\\Additionals\\Samples\\Bremen_.geojson\" --linefilter \"2200 Wanne-Eickel - Hamburg,1404 Abzw Bremen Gabelung - Sagehorn\""
     },
     "Convert Hungary + Romania": {
       "commandName": "Project",
-      "commandLineArgs": "-i \"..\\..\\..\\..\\Additionals\\Samples\\Hungary.geojson,..\\..\\..\\..\\Additionals\\Samples\\Romania.geojson\", -o \"..\\..\\..\\..\\Additionals\\Samples\\Hungary-Romania_.geojson\""
+      "commandLineArgs": "-i \"..\\..\\..\\..\\Additionals\\Samples\\Hungary.geojson,..\\..\\..\\..\\Additionals\\Samples\\Romania.geojson\", -f \"..\\..\\..\\..\\Additionals\\Samples\\Hungary-Romania_.geojson\""
     }
   }
 }

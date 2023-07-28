@@ -73,9 +73,7 @@ namespace SFASimplifierCLI
                     options: options,
                     onProgressChange: onProgressChange);
 
-                service.Run(
-                    inputPaths: options.InputPaths,
-                    outputPath: options.OutputPath);
+                service.Run();
 
                 result = ExitCodeSuccess;
             }

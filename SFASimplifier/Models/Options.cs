@@ -9,7 +9,14 @@ namespace SFASimplifier.Models
         #region Public Properties
 
         [Option(
-            shortName: 'i',
+            shortName: 'f',
+            longName: "featurespath",
+            HelpText = "Define the path of the resulting geojson features file.",
+            Required = false)]
+        public string FeaturesPath { get; set; }
+
+        [Option(
+                shortName: 'i',
             longName: "inputpaths",
             HelpText = "Define the pathes of the GeoJSON files to be input.",
             Required = true,
@@ -100,13 +107,6 @@ namespace SFASimplifier.Models
         public int LocationsFuzzyScore { get; set; }
 
         [Option(
-            shortName: 'o',
-            longName: "outputpaths",
-            HelpText = "Define the path of the resulting file.",
-            Required = true)]
-        public string OutputPath { get; set; }
-
-        [Option(
             longName: "pointattrfilter",
             HelpText = "Key value pairs of attributes where one must exist to be considered as location. The value must be a regular expression. " +
                 "Keys, values, and pairs must be split by a comma.",
@@ -144,6 +144,13 @@ namespace SFASimplifier.Models
                 OgcGeometryType.Point,
             })]
         public IEnumerable<OgcGeometryType> PointTypes { get; set; }
+
+        [Option(
+            shortName: 'r',
+            longName: "routingpath",
+            HelpText = "Define the path of the resulting txt routing graph file.",
+            Required = false)]
+        public string RoutingPath { get; set; }
 
         #endregion Public Properties
     }

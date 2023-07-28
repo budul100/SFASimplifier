@@ -7,6 +7,7 @@ using SFASimplifier.Factories;
 using SFASimplifier.Models;
 using SFASimplifier.Repositories;
 using SFASimplifier.Writers;
+using StringExtensions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -30,6 +31,7 @@ namespace SFASimplifier
         private readonly Options options;
         private readonly PointFactory pointFactory;
         private readonly Watcher progressWatcher;
+        private readonly RoutingWriter routingWriter;
         private readonly SegmentFactory segmentFactory;
         private readonly WayFactory wayFactory;
 
@@ -39,6 +41,13 @@ namespace SFASimplifier
 
         public Service(Options options, Action<double, string> onProgressChange)
         {
+            if (options.FeaturesPath.IsEmpty()
+                && options.RoutingPath.IsEmpty())
+            {
+                throw new Exception("There is neither an output path for the feature file given, " +
+                    "nor an output path for the routing graph. You must define at least one of them.");
+            }
+
             this.options = options;
             this.onProgressChange = onProgressChange;
 
@@ -81,20 +90,23 @@ namespace SFASimplifier
             featureWriter = new FeatureWriter(
                 geometryFactory: geometryFactory,
                 wayFactory: wayFactory);
+
+            routingWriter = new RoutingWriter(
+                wayFactory: wayFactory);
         }
 
         #endregion Public Constructors
 
         #region Public Methods
 
-        public void Run(IEnumerable<string> inputPaths, string outputPath)
+        public void Run()
         {
             using var parentPackage = progressWatcher.Initialize(
                 allSteps: 4,
                 status: "Merge SFA data.");
 
             LoadFiles(
-                inputPaths: inputPaths,
+                inputPaths: options.InputPaths,
                 parentPackage: parentPackage);
 
             DetermineSegments(
@@ -103,8 +115,7 @@ namespace SFASimplifier
             DetermineLinks(
                 parentPackage: parentPackage);
 
-            WriteFile(
-                outputPath: outputPath,
+            WriteFiles(
                 parentPackage: parentPackage);
         }
 
@@ -233,14 +244,25 @@ namespace SFASimplifier
             }
         }
 
-        private void WriteFile(string outputPath, IPackage parentPackage)
+        private void WriteFiles(IPackage parentPackage)
         {
             using var infoPackage = parentPackage.GetPackage(
+                steps: 2,
                 status: "Writing collection.");
 
-            featureWriter.Write(
-                path: outputPath,
-                parentPackage: infoPackage);
+            if (!options.FeaturesPath.IsEmpty())
+            {
+                featureWriter.Write(
+                    path: options.FeaturesPath,
+                    parentPackage: infoPackage);
+            }
+
+            if (!options.RoutingPath.IsEmpty())
+            {
+                routingWriter.Write(
+                    path: options.RoutingPath,
+                    parentPackage: infoPackage);
+            }
         }
 
         #endregion Private Methods
