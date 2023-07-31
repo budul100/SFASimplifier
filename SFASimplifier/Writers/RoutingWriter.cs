@@ -64,6 +64,8 @@ namespace SFASimplifier.Writers
                 items: relevants,
                 status: "Add way features.");
 
+            var index = 0;
+
             foreach (var relevant in relevants)
             {
                 foreach (var link in relevant.Links)
@@ -74,6 +76,7 @@ namespace SFASimplifier.Writers
                     {
                         var arc = new Arc
                         {
+                            ArcID = ++index,
                             FromX = link.From.Centroid.Coordinate.X,
                             FromY = link.From.Centroid.Coordinate.Y,
                             Length = link.Geometry.GetLength(),

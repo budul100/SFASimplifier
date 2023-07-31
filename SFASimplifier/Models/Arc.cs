@@ -47,7 +47,7 @@ namespace SFASimplifier.Models
 
         [Index(14)]
         [Name("ROUTENUMBER")]
-        public int RouteNumber { get; set; }
+        public int? RouteNumber { get; set; }
 
         [Index(13)]
         [Name("STRASSE")]
@@ -65,7 +65,7 @@ namespace SFASimplifier.Models
 
         [Index(18)]
         [Name("TYPNAME")]
-        public int TypName { get; set; }
+        public string TypName { get; set; }
 
         [Index(12)]
         public string Vertices { get; set; }
