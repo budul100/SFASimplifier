@@ -1,0 +1,2 @@
+vehicle.name         = Bus
+vehicle.class        = B                    # Bus

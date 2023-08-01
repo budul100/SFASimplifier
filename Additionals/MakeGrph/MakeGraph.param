@@ -1,6 +1,6 @@
 old_dir_layout                 = true
-in_dir                         = ".\In"
-out_dir                        = ".\Out"
+in_dir                         = ".\Input"
+out_dir                        = ".\RoutingGraph"
 epsilon_x                      = 8.99322e-06
 epsilon_y                      = 8.99322e-06
 epsg_code                      = 4326
