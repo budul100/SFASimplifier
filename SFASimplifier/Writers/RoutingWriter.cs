@@ -4,7 +4,6 @@ using ProgressWatcher.Interfaces;
 using SFASimplifier.Extensions;
 using SFASimplifier.Factories;
 using SFASimplifier.Models;
-using StringExtensions;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -17,8 +16,9 @@ namespace SFASimplifier.Writers
     {
         #region Private Fields
 
-        private const int LevelDefault = 1;
-        private const int RoadclassDefault = 7;
+        private const int IndexStart = 0;
+        private const int LevelDefault = 2;
+        private const int RoadclassDefault = 1;
         private const int TypDefault = 0;
 
         private readonly HashSet<Arc> arcs = new();
@@ -57,39 +57,39 @@ namespace SFASimplifier.Writers
 
         private void LoadArcs(IPackage parentPackage)
         {
-            var relevants = wayFactory.Ways
+            var relevantWays = wayFactory.Ways
                 .Where(w => w.Links?.Any() == true).ToArray();
 
             using var infoPackage = parentPackage.GetPackage(
-                items: relevants,
+                items: relevantWays,
                 status: "Add way features.");
 
-            var index = 0;
+            var index = IndexStart;
 
-            foreach (var relevant in relevants)
+            foreach (var relevantWay in relevantWays)
             {
-                foreach (var link in relevant.Links)
+                var relevantLinks = relevantWay.Links
+                    .Where(l => l.Geometry?.Coordinates?.Any() == true).ToArray();
+
+                foreach (var relevantLink in relevantLinks)
                 {
-                    var vertices = link.Geometry.GetVertices();
+                    var vertices = relevantLink.GetVertices();
 
-                    if (!vertices.IsEmpty())
+                    var arc = new Arc
                     {
-                        var arc = new Arc
-                        {
-                            ArcID = ++index,
-                            FromX = link.From.Centroid.Coordinate.X,
-                            FromY = link.From.Centroid.Coordinate.Y,
-                            Length = link.Geometry.GetLength(),
-                            Level = LevelDefault,
-                            RoadClass = RoadclassDefault,
-                            ToX = link.From.Centroid.Coordinate.X,
-                            ToY = link.From.Centroid.Coordinate.Y,
-                            Typ = TypDefault,
-                            Vertices = vertices,
-                        };
+                        ArcID = ++index,
+                        FromX = relevantLink.Geometry.Coordinates[0].X,
+                        FromY = relevantLink.Geometry.Coordinates[0].Y,
+                        Length = relevantLink.Geometry.GetLength(),
+                        Level = LevelDefault,
+                        RoadClass = RoadclassDefault,
+                        ToX = relevantLink.Geometry.Coordinates[^1].X,
+                        ToY = relevantLink.Geometry.Coordinates[^1].Y,
+                        Typ = TypDefault,
+                        Vertices = vertices,
+                    };
 
-                        arcs.Add(arc);
-                    }
+                    arcs.Add(arc);
                 }
 
                 infoPackage.NextStep();

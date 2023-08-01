@@ -110,18 +110,32 @@ namespace SFASimplifier.Factories
         private IEnumerable<Coordinate> GetCoordinates(Models.Location from, Models.Location to,
             IEnumerable<Geometry> geometries)
         {
+            var mergedCoordinates = GetCoordinatesMerged(geometries).ToArray();
+
+            var fromIsFirst = from.Centroid.Coordinate.GetDistance(mergedCoordinates[0]) <
+                to.Centroid.Coordinate.GetDistance(mergedCoordinates[0]);
+
+            yield return fromIsFirst
+                ? from.Centroid.Coordinate
+                : to.Centroid.Coordinate;
+
+            foreach (var mergedCoordinate in mergedCoordinates)
+            {
+                yield return mergedCoordinate;
+            }
+
+            yield return fromIsFirst
+                ? to.Centroid.Coordinate
+                : from.Centroid.Coordinate;
+        }
+
+        private IEnumerable<Coordinate> GetCoordinatesMerged(IEnumerable<Geometry> geometries)
+        {
             var relevantGeometry = geometries.First();
 
             var otherGeometries = geometries
                 .Where(g => g != relevantGeometry)
                 .DistinctBy(g => g.Coordinates.GetSequenceHash()).ToArray();
-
-            var fromIsFirst = from.Centroid.Coordinate.GetDistance(relevantGeometry.Coordinates[0]) <
-                to.Centroid.Coordinate.GetDistance(relevantGeometry.Coordinates[0]);
-
-            yield return fromIsFirst
-                ? from.Centroid.Coordinate
-                : to.Centroid.Coordinate;
 
             foreach (var relevantCoordinate in relevantGeometry.Coordinates)
             {
@@ -146,10 +160,6 @@ namespace SFASimplifier.Factories
                     yield return currentCoordinates.Single();
                 }
             }
-
-            yield return fromIsFirst
-                ? to.Centroid.Coordinate
-                : from.Centroid.Coordinate;
         }
 
         #endregion Private Methods

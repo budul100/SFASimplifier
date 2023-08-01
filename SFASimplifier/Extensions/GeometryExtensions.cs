@@ -5,9 +5,7 @@ using NetTopologySuite.Operation.Distance;
 using SFASimplifier.Models;
 using StringExtensions;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
-using System.Text;
 
 namespace SFASimplifier.Extensions
 {
@@ -16,7 +14,6 @@ namespace SFASimplifier.Extensions
         #region Private Fields
 
         private const int TakeMaxGeometries = 1000;
-        private const char VerticesDelimiter = ' ';
 
         #endregion Private Fields
 
@@ -126,35 +123,6 @@ namespace SFASimplifier.Extensions
                 loc: loc);
 
             return result;
-        }
-
-        public static string GetVertices(this Geometry geometry)
-        {
-            var result = new StringBuilder();
-
-            if (geometry?.Coordinates?.Length > 1)
-            {
-                var numberFormat = new NumberFormatInfo
-                {
-                    NumberDecimalSeparator = "."
-                };
-
-                foreach (var coordinate in geometry.Coordinates)
-                {
-                    if (result.Length > 0)
-                    {
-                        result.Append(VerticesDelimiter);
-                    }
-
-                    result.Append(coordinate.X.ToString(numberFormat));
-
-                    result.Append(VerticesDelimiter);
-
-                    result.Append(coordinate.Y.ToString(numberFormat));
-                }
-            }
-
-            return result.ToString();
         }
 
         #endregion Public Methods

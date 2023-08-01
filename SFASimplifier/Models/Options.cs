@@ -11,14 +11,14 @@ namespace SFASimplifier.Models
         [Option(
             shortName: 'f',
             longName: "featurespath",
-            HelpText = "Define the path of the resulting geojson features file.",
+            HelpText = "Path of the resulting geojson features file.",
             Required = false)]
         public string FeaturesPath { get; set; }
 
         [Option(
-                shortName: 'i',
+            shortName: 'i',
             longName: "inputpaths",
-            HelpText = "Define the pathes of the GeoJSON files to be input.",
+            HelpText = "Pathes of the GeoJSON files to be input.",
             Required = true,
             Separator = ',')]
         public IEnumerable<string> InputPaths { get; set; }
@@ -148,7 +148,7 @@ namespace SFASimplifier.Models
         [Option(
             shortName: 'r',
             longName: "routingpath",
-            HelpText = "Define the path of the resulting txt routing graph file.",
+            HelpText = "Path of the resulting txt routing graph file.",
             Required = false)]
         public string RoutingPath { get; set; }
 
