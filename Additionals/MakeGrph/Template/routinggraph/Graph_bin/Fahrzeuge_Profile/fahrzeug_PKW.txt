@@ -1,0 +1,2 @@
+vehicle.name         = PKW
+vehicle.class        = A                    # Pkw

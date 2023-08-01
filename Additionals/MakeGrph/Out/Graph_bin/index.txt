@@ -1,0 +1,151 @@
+# Hierarchischer Graph der Tiefe 2
+# Zerlegt in 1x1 Kacheln.
+# UID: G1PoDY8r0wZt8DOZKhMnEhSvBYKKWXqGQkXnQyi3EKozIxCuRqwiePtVlYHQ
+# UID-Rel: 0
+# Meta-Daten:
+# Description=Graph Railway Lines
+# Created=2023-8-1
+# CreatedBy=IVU Traffic Technologies AG
+# CreatedWith=OSM -
+# Copyright=IVU Traffic Technologies AG
+# CoordinateSystem=(SRS=EPSG:4326)
+# RoadClasses=1,10,11,12,13,14,15,16,17,18,19,2,20,21,22,3,4,5,6,7,8,9
+# RoadClassesLabels=Autobahn,Nebenstrasse,unklassifiziert,Verkehrsberuhigte Strasse,Auffahrt,Feldweg,Parkweg,Radweg,Fussweg,Reitweg,in Bau,Autobahnauffahrt,Wendestelle,allgemeine Strasse,Aufzug,Schnellstrasse,Auffahrt Schnellstrasse,Bundesstrasse,Auffahrt Bundesstrasse,Landstrasse,Auffahrt Landstrasse,Kreisstrasse
+# RoadClassesHafasType=
+# RoadClassesHafasSubType=
+# RoadClassesIgnore=
+# RoadClassesLocal=10,11,12,13,14,15,16,17,18,19,20,21,22,8,9,7
+# RoadClassesLongDist=1,2,3,4,5,6
+# RoadTypes=
+# RoadTypesLabels=
+# VehicleClasses=A,B,P,R,Y
+# VehicleClassesLabels=Pkw,Bus,Fussgaenger,LKW,Fahrrad
+# Countries=DE
+# CountriesLabels=Deutschland
+# ------------------------------------------------------------
+# Graph erstellt:
+# ICRoute-MakeGraph (Version 2.2.48)
+# MakeGraph-Parameter:
+# #--- Parameter (MakeGraph-Parameter) ----------------------------------#
+# old_dir_layout                 = true
+# in_dir                         = ".\In"
+# out_dir                        = ".\Out"
+# epsilon_x                      = 8.99322e-06
+# epsilon_y                      = 8.99322e-06
+# epsg_code                      = 4326
+# grid_in_meter                  = true
+# grid_meter                     = 6000
+# num_gridx                      = 10
+# num_gridy                      = 10
+# max_kacheln                    = 1000000
+# komprimierung_fern             = true
+# fc_fern                        = "1,2,3,4,5,6"
+# fc_lokal                       = "10,11,12,13,14,15,16,17,18,19,20,21,22,7,8,9"
+# fc_ignore                      = ""
+# default_wartezeit              = 300
+# beachte_wartezeit              = true
+# verbose_level                  = 1
+# kk_min_radius                  = 1
+# kk_max_radius                  = 20
+# kk_max_winkel                  = 170
+# kk_max_gewichtfaktor           = 20
+# kachel_gewichtung              = "linear"
+# behalte_tmp_files              = false
+# uebertrage_zusaetze            = true
+# fahrzeug_profil_dir            = ""
+# sperrpolygon_dir               = ""
+# polygon_pfad                   = ""
+# arc_id_liste_pfad              = ""
+# passwd                         = ""
+# binaer_sig_datei               = ""
+# packen_zlib                    = false
+# graph_kompakt                  = false
+# index_bin_name                 = "index.bin"
+# #----------------------------------------------------------------------#
+
+Der Graph ...
+- kann Diff-Records aufnehmen,
+- hat keine Node-IDs,
+- hat Arc-IDs,
+- hat keine vorberechnete Kanten.
+
+Strassenklassen:
+ID	Name	Beschreibung
+1	1	Autobahn
+2	2	Autobahnauffahrt
+3	3	Schnellstrasse
+4	4	Auffahrt Schnellstrasse
+5	5	Bundesstrasse
+6	6	Auffahrt Bundesstrasse
+7	7	Landstrasse
+8	8	Auffahrt Landstrasse
+9	9	Kreisstrasse
+10	10	Nebenstrasse
+11	11	unklassifiziert
+12	12	Verkehrsberuhigte Strasse
+13	13	Auffahrt
+14	14	Feldweg
+15	15	Parkweg
+16	16	Radweg
+17	17	Fussweg
+18	18	Reitweg
+19	19	in Bau
+20	20	Wendestelle
+21	21	allgemeine Strasse
+22	22	Aufzug
+
+Strassentypen:
+ID	Name	Beschreibung
+
+Fahrzeugklassen:
+ID	Name	Beschreibung
+1	A	Pkw
+2	B	Bus
+3	P	Fussgaenger
+4	R	LKW
+5	Y	Fahrrad
+
+Vorhandene Zusatzfelder:
+NoTurnFrom
+NoTurnTo
+ORT
+ORTSTEIL
+ROUTENUMBER
+STRASSE
+TYP
+TYPNAME
+
+Vorhandene Laendercodes:
+
+
+
+                | Tiefe | Durchschnitt | Maximum
+----------------+-------+--------------+--------------
+Anzahl Koop.    |     0 |            1 |            1
+Gewicht         |     0 |         1091 |         1091
+Gewicht Koop.   |     0 |         1091 |         1091
+Kanten          |     0 |            2 |            2
+Kanten Koop.    |     0 |            2 |            2
+----------------+-------+--------------+--------------
+Anzahl Koop.    |     1 |            1 |            1
+Gewicht         |     1 |         1000 |         1000
+Gewicht Koop.   |     1 |         1000 |         1000
+Kanten          |     1 |            4 |            4
+Kanten Koop.    |     1 |            4 |            4
+
+Gewichtsnormierung: 1000
+Byte pro Gewichtseinheit: 4.592
+Default fuer das Gewicht ladbarer Kacheln: 3091
+Default fuer das Gewicht ladbarer Zusaetze: 200
+Default fuer das Gewicht ladbarer Sperrpolygone: 0
+Faktor fuer ladbare Sperrpolygone: 1
+Sperrpolygondatei: 
+
+Typstatistik fuer Tiefe 0:
+        class Kanten_Info_Multikante_Std       224         2         0         0
+                       class Knoten_Info        32         2         0         0
+
+Typstatistik fuer Tiefe 1:
+          class Kanten_Info_Std_ohneTyMa        72         4         0         0
+                       class Knoten_Info        32         3         0         0
+

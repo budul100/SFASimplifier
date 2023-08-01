@@ -1,0 +1,3 @@
+Adresse	Gewicht	Anschluss	Anz_Knoten	Anz_Kanten	Anz_Nullkanten	Anz_Multikanten	Anz_Subkanten	Dist_laengste_Kante
+R	1091	selbst	2	2	0	2	4	3053
+R.0	1000	selbst	3	4	0	0	0	1578

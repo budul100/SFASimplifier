@@ -1,0 +1,19 @@
+Description=Graph Railway Lines
+Created=2023-8-1
+CreatedBy=IVU Traffic Technologies AG
+CreatedWith=OSM -
+Copyright=IVU Traffic Technologies AG
+CoordinateSystem=(SRS=EPSG:4326)
+RoadClasses=1,10,11,12,13,14,15,16,17,18,19,2,20,21,22,3,4,5,6,7,8,9
+RoadClassesLabels=Autobahn,Nebenstrasse,unklassifiziert,Verkehrsberuhigte Strasse,Auffahrt,Feldweg,Parkweg,Radweg,Fussweg,Reitweg,in Bau,Autobahnauffahrt,Wendestelle,allgemeine Strasse,Aufzug,Schnellstrasse,Auffahrt Schnellstrasse,Bundesstrasse,Auffahrt Bundesstrasse,Landstrasse,Auffahrt Landstrasse,Kreisstrasse
+RoadClassesHafasType=
+RoadClassesHafasSubType=
+RoadClassesIgnore=
+RoadClassesLocal=10,11,12,13,14,15,16,17,18,19,20,21,22,8,9,7
+RoadClassesLongDist=1,2,3,4,5,6
+RoadTypes=
+RoadTypesLabels=
+VehicleClasses=A,B,P,R,Y
+VehicleClassesLabels=Pkw,Bus,Fussgaenger,LKW,Fahrrad
+Countries=DE
+CountriesLabels=Deutschland
