@@ -65,7 +65,7 @@ namespace SFASimplifier.Models
             HelpText = "The min value of the angle between two geometry segments to be merged into a link or line. " +
                 "This values allows to avoid acute angles on the lines.",
             Required = false,
-            Default = 120)]
+            Default = 140)]
         public double LinksAngleMin { get; set; }
 
         [Option(
