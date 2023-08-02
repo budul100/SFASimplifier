@@ -2,8 +2,8 @@
 
 set /p "INPUTFILE=Enter input path: "
 
-for %%f in ("%INPUTFILE%") do set FEATURESFILE=%%~dpnf_.geojson
-for %%f in ("%INPUTFILE%") do set ROUTINGFILE=%%~dpnf_.txt
+for %%f in ("%INPUTFILE%") do set FEATURESFILE=%%~dpnf_Merged.geojson
+for %%f in ("%INPUTFILE%") do set ROUTINGFILE=%%~dpnf_Lines.txt
 
 echo.
 echo Simplify %INPUTFILE%
