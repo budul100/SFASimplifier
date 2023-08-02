@@ -90,10 +90,10 @@ namespace SFASimplifier.Extensions
             return result;
         }
 
-        public static bool IsValid(this Feature feature, IEnumerable<string> lineFilters, IEnumerable<string> attributesKey)
+        public static bool IsValid(this Feature feature, IEnumerable<string> lineFilters, IEnumerable<string> attributesKeys)
         {
             var result = (lineFilters?.Any() != true) || lineFilters.Any(f => Regex.IsMatch(
-                input: feature.GetAttribute(attributesKey),
+                input: feature.GetAttribute(attributesKeys),
                 pattern: f));
 
             return result;

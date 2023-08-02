@@ -9,7 +9,6 @@
 		<PackageReference Include="budul.ProgressWatcher" Version="1.0.1" />
 		<PackageReference Include="budul.StringExtensions" Version="1.18.2" />
 		<PackageReference Include="CommandLineParser" Version="2.9.1" />
-		<PackageReference Include="CsvHelper" Version="30.0.1" />
 		<PackageReference Include="FuzzySharp" Version="2.0.2" />
 		<PackageReference Include="NetTopologySuite.IO.GeoJSON" Version="3.0.0" />
 		<PackageReference Include="ProjNet" Version="2.0.0" />

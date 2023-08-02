@@ -39,7 +39,7 @@ namespace SFASimplifier.Factories
         {
             var relevants = lines.Where(l => l.IsValid(
                 lineFilters: lineFilters,
-                attributesKey: attributesKey)).ToArray();
+                attributesKeys: attributesKey)).ToArray();
 
             using var infoPackage = parentPackage.GetPackage(
                 items: relevants,
@@ -94,28 +94,28 @@ namespace SFASimplifier.Factories
                         before: geometry.Coordinates[indexTo - 1],
                         after: geometry.Coordinates[indexTo + 1]))
                     {
-                        var result = GetGeometry(
+                        var currentGeometry = GetGeometry(
                             allCoordinates: allCoordinates,
                             indexFrom: indexFrom,
                             indexTo: indexTo);
 
-                        if (result != default)
+                        if (currentGeometry != default)
                         {
-                            yield return result;
+                            yield return currentGeometry;
                         }
 
                         indexFrom = indexTo;
                     }
                 }
 
-                var resultFinal = GetGeometry(
+                var lastGeometry = GetGeometry(
                     allCoordinates: allCoordinates,
                     indexFrom: indexFrom,
                     indexTo: allCoordinates.Length - 1);
 
-                if (resultFinal != default)
+                if (lastGeometry != default)
                 {
-                    yield return resultFinal;
+                    yield return lastGeometry;
                 }
 
                 infoPackage.NextStep();

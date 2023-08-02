@@ -7,7 +7,6 @@ using SFASimplifier.Factories;
 using SFASimplifier.Models;
 using SFASimplifier.Repositories;
 using SFASimplifier.Writers;
-using StringExtensions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -31,7 +30,6 @@ namespace SFASimplifier
         private readonly Options options;
         private readonly PointFactory pointFactory;
         private readonly Watcher progressWatcher;
-        private readonly RoutingWriter routingWriter;
         private readonly SegmentFactory segmentFactory;
         private readonly WayFactory wayFactory;
 
@@ -41,13 +39,6 @@ namespace SFASimplifier
 
         public Service(Options options, Action<double, string> onProgressChange)
         {
-            if (options.FeaturesPath.IsEmpty()
-                && options.RoutingPath.IsEmpty())
-            {
-                throw new Exception("There is neither an output path for the feature file given, " +
-                    "nor an output path for the routing graph. You must define at least one of them.");
-            }
-
             this.options = options;
             this.onProgressChange = onProgressChange;
 
@@ -90,9 +81,6 @@ namespace SFASimplifier
             featureWriter = new FeatureWriter(
                 geometryFactory: geometryFactory,
                 wayFactory: wayFactory);
-
-            routingWriter = new RoutingWriter(
-                wayFactory: wayFactory);
         }
 
         #endregion Public Constructors
@@ -103,7 +91,7 @@ namespace SFASimplifier
         {
             using var parentPackage = progressWatcher.Initialize(
                 allSteps: 4,
-                status: "Merge SFA data.");
+                status: "Simplify SFA data.");
 
             LoadFiles(
                 inputPaths: options.InputPaths,
@@ -247,22 +235,11 @@ namespace SFASimplifier
         private void WriteFiles(IPackage parentPackage)
         {
             using var infoPackage = parentPackage.GetPackage(
-                steps: 2,
-                status: "Writing collection.");
+                status: "Writing features collection.");
 
-            if (!options.FeaturesPath.IsEmpty())
-            {
-                featureWriter.Write(
-                    path: options.FeaturesPath,
-                    parentPackage: infoPackage);
-            }
-
-            if (!options.RoutingPath.IsEmpty())
-            {
-                routingWriter.Write(
-                    path: options.RoutingPath,
-                    parentPackage: infoPackage);
-            }
+            featureWriter.Write(
+                path: options.OutputPath,
+                parentPackage: infoPackage);
         }
 
         #endregion Private Methods

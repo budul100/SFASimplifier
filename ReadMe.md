@@ -1,3 +1,9 @@
+# SFASimplier
+
+SFASimplifier minimizes *Simple Feature Access data* to use it as a reduced data set.
+
+## Example Grabbing Railway Lines
+
 ```
 [out:json][timeout:25];
 
