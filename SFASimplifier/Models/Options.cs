@@ -9,6 +9,34 @@ namespace SFASimplifier.Models
         #region Public Properties
 
         [Option(
+            longName: "distlocations",
+            HelpText = "Maximum distance of two points in meters to be merged into the same location.",
+            Required = false,
+            Default = 250)]
+        public int DistanceBetweenLocations { get; set; }
+
+        [Option(
+            longName: "distcapture",
+            HelpText = "Maximum distance of a points to a line in meters to be considered as location on this line.",
+            Required = false,
+            Default = 25)]
+        public int DistanceToCapture { get; set; }
+
+        [Option(
+            longName: "distjunction",
+            HelpText = "Minimum distance between the end of a link and a junction to have this point considered as own location.",
+            Required = false,
+            Default = 500)]
+        public int DistanceToJunction { get; set; }
+
+        [Option(
+            longName: "distmerge",
+            HelpText = "Maximum distance between lines to be merged into a single line. This value determines the positions of additional junction points on the lines.",
+            Required = false,
+            Default = 100)]
+        public int DistanceToMerge { get; set; }
+
+        [Option(
             shortName: 'i',
             longName: "inputpaths",
             HelpText = "Pathes of the GeoJSON files to be input.",
@@ -62,10 +90,9 @@ namespace SFASimplifier.Models
 
         [Option(
             longName: "linkanglemin",
-            HelpText = "The min value of the angle between two geometry segments to be merged into a link or line. " +
-                "This values allows to avoid acute angles on the lines.",
+            HelpText = "The min value of the angle between links in a line. This values creates smooth curves on lines.",
             Required = false,
-            Default = 140)]
+            Default = 160)]
         public double LinksAngleMin { get; set; }
 
         [Option(
@@ -78,26 +105,20 @@ namespace SFASimplifier.Models
         public int LinksLengthSplit { get; set; }
 
         [Option(
-            longName: "locdistline",
-            HelpText = "Maximum distance of a points to a line in meters to be considered as location on this line.",
-            Required = false,
-            Default = 20)]
-        public int LocationsDistanceToLine { get; set; }
-
-        [Option(
-            longName: "locdistothers",
-            HelpText = "Maximum distance of two points in meters to be merged into the same location.",
-            Required = false,
-            Default = 250)]
-        public int LocationsDistanceToOthers { get; set; }
-
-        [Option(
             longName: "locfuzzyscore",
             HelpText = "Fuzzy score two compare the names of two points to be merged into the same location. " +
                 "The value can be between 100 (must be fully equal) and 0 (must not be equal at all).",
             Required = false,
             Default = 100)]
         public int LocationsFuzzyScore { get; set; }
+
+        [Option(
+            longName: "mergeanglemin",
+            HelpText = "The min value of the angle between two geometry segments to be merged into a link or line. " +
+                "This values allows to avoid acute angles on the lines.",
+            Required = false,
+            Default = 110)]
+        public double MergeAngleMin { get; set; }
 
         [Option(
                 shortName: 'o',
@@ -144,6 +165,13 @@ namespace SFASimplifier.Models
                 OgcGeometryType.Point,
             })]
         public IEnumerable<OgcGeometryType> PointTypes { get; set; }
+
+        [Option(
+            longName: "preventattrmerge",
+            HelpText = "If set, then the resulting attributes of the features are not merged but all exported.",
+            Required = false,
+            Default = false)]
+        public bool PreventMergingAttributes { get; set; }
 
         #endregion Public Properties
     }

@@ -2,6 +2,7 @@
 using NetTopologySuite.Geometries;
 using ProjNet.CoordinateSystems;
 using ProjNet.CoordinateSystems.Transformations;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -41,31 +42,30 @@ namespace SFASimplifier.Extensions
         }
 
         public static bool IsAcuteAngle(this Coordinate via, Coordinate before, Coordinate after,
-            double angleMin = AngleUtility.PiOver2)
+            double angleMin = 90)
         {
             if (before == default || after == default || before.Equals2D(after))
             {
                 return true;
             }
 
-            var angle = AngleUtility.AngleBetween(
-                tip1: before,
-                tail: via,
-                tip2: after);
+            var angleRad = AngleUtility.AngleBetween(before, via, after);
+            var angleDeg = AngleUtility.ToDegrees(angleRad);
 
-            return angle <= angleMin;
+            return angleDeg <= angleMin;
         }
 
         public static IEnumerable<Coordinate> WithoutAcute(this IEnumerable<Coordinate> coordinates,
             double angleMin)
         {
-            var result = coordinates.ToArray();
+            var result = coordinates
+                .Reverse().Distinct().ToArray();
 
-            result = result.WithoutAcuteBack(
-                angleMin: angleMin).Reverse().ToArray();
+            result = result.WithoutAcuteFront(angleMin)
+                .Reverse().Distinct().ToArray();
 
-            result = result.WithoutAcuteFront(
-                angleMin: angleMin).Distinct().ToArray();
+            result = result.WithoutAcuteFront(angleMin)
+                .Distinct().ToArray();
 
             return result;
         }

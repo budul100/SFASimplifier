@@ -1,8 +1,8 @@
 {
   "profiles": {
-    "Convert Export": {
+    "Convert Example": {
       "commandName": "Project",
-      "commandLineArgs": "-i \"C:\\Users\\mgr\\Downloads\\export.geojson\" -o \"C:\\Users\\mgr\\Downloads\\export_.geojson\" "
+      "commandLineArgs": "-i \"..\\..\\..\\..\\Additionals\\Samples\\Example.geojson\" -o \"..\\..\\..\\..\\Additionals\\Samples\\Example_.geojson\" --lineattrkey \"\" --lineattrfilter \"\""
     },
     "Convert Bremen": {
       "commandName": "Project",

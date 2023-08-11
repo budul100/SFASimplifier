@@ -58,7 +58,11 @@ namespace SFASimplifier.Factories
 
             foreach (var locationGroup in locationGroups)
             {
-                var coordinates = locationGroup
+                var relevants = locationGroup.Any(l => !l.IsBorder)
+                    ? locationGroup.Where(l => !l.IsBorder)
+                    : locationGroup;
+
+                var coordinates = relevants
                     .Select(n => n.Coordinate)
                     .Distinct().ToArray();
 
@@ -70,12 +74,12 @@ namespace SFASimplifier.Factories
             }
         }
 
-        public Models.Location Get(Feature feature, bool isBorder, string key)
+        public Models.Location Get(string key, bool isBorder, Feature feature)
         {
             var result = GetLocation(
-                feature: feature,
+                key: key,
                 isBorder: isBorder,
-                key: key);
+                feature: feature);
 
             return result;
         }
@@ -150,12 +154,15 @@ namespace SFASimplifier.Factories
 
         #region Private Methods
 
-        private Models.Location GetLocation(Feature feature, bool isBorder, string key)
+        private Models.Location GetLocation(string key, bool isBorder, Feature feature)
         {
-            var result = locations
-                .Where(l => (isBorder || key.IsEmpty() || l.Key.IsEmpty() || Fuzz.Ratio(key, l.Key) >= fuzzyScore)
-                    && l.Features.GetDistance(feature) < maxDistance)
-                .OrderBy(l => l.Features.GetDistance(feature)).FirstOrDefault();
+            var relevants = locations
+                .Where(l => isBorder || key.IsEmpty() || l.Key.IsEmpty() || Fuzz.Ratio(key, l.Key) >= fuzzyScore);
+
+            var result = feature == default
+                ? relevants.FirstOrDefault()
+                : relevants.Where(l => l.Features.GetDistance(feature) < maxDistance)
+                    .OrderBy(l => l.Features.GetDistance(feature)).FirstOrDefault();
 
             if (result == default)
             {
@@ -174,7 +181,10 @@ namespace SFASimplifier.Factories
                 result.IsBorder = false;
             }
 
-            result.Features.Add(feature);
+            if (feature != default)
+            {
+                result.Features.Add(feature);
+            }
 
             return result;
         }

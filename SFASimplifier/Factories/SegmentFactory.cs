@@ -13,7 +13,7 @@ namespace SFASimplifier.Factories
     {
         #region Private Fields
 
-        private readonly double distanceNodeToLine;
+        private readonly double distanceToCapture;
         private readonly GeometryFactory geometryFactory;
         private readonly IEnumerable<string> keyAttributes;
         private readonly LocationFactory locationFactory;
@@ -25,13 +25,13 @@ namespace SFASimplifier.Factories
         #region Public Constructors
 
         public SegmentFactory(GeometryFactory geometryFactory, PointFactory pointFactory,
-            LocationFactory locationFactory, IEnumerable<string> keyAttributes, double distanceNodeToLine)
+            LocationFactory locationFactory, IEnumerable<string> keyAttributes, double distanceToCapture)
         {
             this.geometryFactory = geometryFactory;
             this.pointFactory = pointFactory;
             this.locationFactory = locationFactory;
             this.keyAttributes = keyAttributes;
-            this.distanceNodeToLine = distanceNodeToLine;
+            this.distanceToCapture = distanceToCapture;
         }
 
         #endregion Public Constructors
@@ -48,30 +48,28 @@ namespace SFASimplifier.Factories
 
         public void Load(IEnumerable<Way> ways, IPackage parentPackage)
         {
-            var geometries = ways
+            var geometryGroups = ways
                 .SelectMany(w => w.Geometries.Select(g => (Geometry: g, Way: w)))
-                .GroupBy(g => (g.Geometry.Coordinates.GetSequenceHashDirected(), g.Geometry.Coordinates.Length)).ToArray();
+                .GroupBy(w => w.Geometry).ToArray();
 
             using var infoPackage = parentPackage.GetPackage(
-                items: geometries,
+                items: geometryGroups,
                 status: "Determining segments.");
 
-            foreach (var geometry in geometries)
+            foreach (var geometryGroup in geometryGroups)
             {
-                var relevant = geometry.First().Geometry;
-
-                var nodes = GetNodes(relevant)
+                var nodes = GetNodes(geometryGroup.Key)
                     .GroupBy(n => n.Position)
                     .Select(g => g.OrderByDescending(n => !n.Location.IsBorder).First())
                     .OrderBy(n => n.Position).ToArray();
 
                 if (nodes.Distinct().Count() > 1)
                 {
-                    var currentWays = geometry
-                        .Select(g => g.Way).ToArray();
+                    var currentWays = geometryGroup
+                        .Select(w => w.Way).ToArray();
 
                     AddSegments(
-                        geometry: relevant,
+                        geometry: geometryGroup.Key,
                         nodes: nodes,
                         ways: currentWays);
                 }
@@ -176,9 +174,11 @@ namespace SFASimplifier.Factories
 
         private IEnumerable<Node> GetNodes(Geometry geometry)
         {
-            var pointGroups = pointFactory.Points.GetAround(
-                geometry: geometry,
-                meters: distanceNodeToLine)
+            var isInBuffer = geometry.GetIsInBufferPredicate(
+                distanceInMeters: distanceToCapture);
+
+            var pointGroups = pointFactory.Points
+                .Where(p => isInBuffer(p.Geometry))
                 .GroupBy(p => p.GetAttribute(keyAttributes) ?? p.GetHashCode().ToString()).ToArray();
 
             foreach (var pointGroup in pointGroups)
@@ -186,16 +186,16 @@ namespace SFASimplifier.Factories
                 var relevants = geometry.FilterNodes(
                     points: pointGroup,
                     keyAttributes: keyAttributes,
-                    distanceNodeToLine: distanceNodeToLine).ToArray();
+                    distanceNodeToLine: distanceToCapture).ToArray();
 
                 var key = pointGroup.GetPrimaryAttribute(keyAttributes);
 
                 foreach (var relevant in relevants)
                 {
                     relevant.Location = locationFactory.Get(
-                        feature: relevant.Point,
+                        key: key,
                         isBorder: relevant.IsBorder,
-                        key: key);
+                        feature: relevant.Point);
 
                     yield return relevant;
                 }

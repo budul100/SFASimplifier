@@ -12,16 +12,23 @@ namespace SFASimplifier.Factories
     {
         #region Private Fields
 
+        private readonly IEnumerable<string> attributesKey;
         private readonly GeometryFactory geometryFactory;
+        private readonly IEnumerable<string> lineFilters;
         private readonly HashSet<Way> ways = new();
+
+        private HashSet<LineString> geometries = new HashSet<LineString>();
 
         #endregion Private Fields
 
         #region Public Constructors
 
-        public WayFactory(GeometryFactory geometryFactory)
+        public WayFactory(GeometryFactory geometryFactory, IEnumerable<string> attributesKey,
+                   IEnumerable<string> lineFilters)
         {
             this.geometryFactory = geometryFactory;
+            this.attributesKey = attributesKey;
+            this.lineFilters = lineFilters;
         }
 
         #endregion Public Constructors
@@ -34,8 +41,7 @@ namespace SFASimplifier.Factories
 
         #region Public Methods
 
-        public void Load(IEnumerable<Feature> lines, IEnumerable<string> attributesKey,
-            IEnumerable<string> lineFilters, IPackage parentPackage)
+        public void Load(IEnumerable<Feature> lines, IPackage parentPackage)
         {
             var relevants = lines.Where(l => l.IsValid(
                 lineFilters: lineFilters,
@@ -129,7 +135,15 @@ namespace SFASimplifier.Factories
             if (indexTo > indexFrom + 1)
             {
                 var coordinates = allCoordinates[indexFrom..(indexTo + 1)];
-                result = geometryFactory.CreateLineString(coordinates);
+                var geometry = geometryFactory.CreateLineString(coordinates);
+
+                result = geometries.SingleOrDefault(g => g.Equals(geometry));
+
+                if (result == default)
+                {
+                    result = geometry;
+                    geometries.Add(geometry);
+                }
             }
 
             return result;

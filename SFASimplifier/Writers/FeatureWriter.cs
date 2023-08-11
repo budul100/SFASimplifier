@@ -6,7 +6,6 @@ using ProgressWatcher.Interfaces;
 using SFASimplifier.Extensions;
 using SFASimplifier.Factories;
 using SFASimplifier.Models;
-using StringExtensions;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -19,16 +18,18 @@ namespace SFASimplifier.Writers
 
         private readonly FeatureCollection featureCollection = new();
         private readonly GeometryFactory geometryFactory;
-        private readonly WayFactory wayFactory;
+        private readonly LinkFactory linkFactory;
+        private readonly bool preventMergingAttributes;
 
         #endregion Private Fields
 
         #region Public Constructors
 
-        public FeatureWriter(GeometryFactory geometryFactory, WayFactory wayFactory)
+        public FeatureWriter(GeometryFactory geometryFactory, LinkFactory linkFactory, bool preventMergingAttributes)
         {
             this.geometryFactory = geometryFactory;
-            this.wayFactory = wayFactory;
+            this.linkFactory = linkFactory;
+            this.preventMergingAttributes = preventMergingAttributes;
         }
 
         #endregion Public Constructors
@@ -42,7 +43,9 @@ namespace SFASimplifier.Writers
                 status: "Create feature collection");
 
             LoadLocations(
+                preventMergingAttributes: preventMergingAttributes,
                 parentPackage: infoPackage);
+
             LoadWays(
                 parentPackage: infoPackage);
 
@@ -55,39 +58,10 @@ namespace SFASimplifier.Writers
 
         #region Private Methods
 
-        private static Feature GetFeature(Models.Location location)
+        private static Feature GetFeature(Models.Location location, bool preventMergingAttributes)
         {
-            var table = new Dictionary<string, object>();
-
-            var names = location.Features
-                .Where(f => f.Attributes?.Count > 1)
-                .Select(f => f.Attributes)
-                .SelectMany(a => a.GetNames())
-                .Distinct().OrderBy(n => n).ToArray();
-
-            foreach (var name in names)
-            {
-                var values = location.Features
-                    .Select(f => f.GetAttribute(name))
-                    .Where(a => !a.IsEmpty())
-                    .Distinct().OrderBy(n => n).ToArray();
-
-                var index = 0;
-
-                foreach (var value in values)
-                {
-                    var key = values.Length > 1
-                        ? $"{name} ({++index})"
-                        : name;
-
-                    if (!table.ContainsKey(key))
-                    {
-                        table.Add(
-                            key: key,
-                            value: value);
-                    }
-                }
-            }
+            var table = location.Features.GetAttributesTable(
+                preventMerging: preventMergingAttributes);
 
             var attributeTable = new AttributesTable(table);
 
@@ -98,12 +72,12 @@ namespace SFASimplifier.Writers
             return result;
         }
 
-        private Feature GetFeature(Way way)
+        private Feature GetFeature(Way way, IEnumerable<Link> links)
         {
             Geometry geometry;
 
-            var geometries = way.Links
-                .Select(l => l.Geometry).ToArray();
+            var geometries = links
+                .Select(l => geometryFactory.CreateLineString(l.Coordinates.ToArray())).ToArray();
 
             if (geometries.Length > 1)
             {
@@ -122,14 +96,11 @@ namespace SFASimplifier.Writers
             return result;
         }
 
-        private void LoadLocations(IPackage parentPackage)
+        private void LoadLocations(bool preventMergingAttributes, IPackage parentPackage)
         {
-            var links = wayFactory.Ways
-                .SelectMany(w => w.Links)
-                .Distinct().ToArray();
-
-            var relevants = links.Select(l => l.From.Main ?? l.From)
-                .Union(links.Select(l => l.To.Main ?? l.To))
+            var relevants = linkFactory.Links.Select(l => l.From?.Main ?? l.From)
+                .Union(linkFactory.Links.Select(l => l.To?.Main ?? l.To))
+                .Where(l => l != default)
                 .OrderBy(l => l.Key?.ToString()).ToArray();
 
             using var infoPackage = parentPackage.GetPackage(
@@ -138,7 +109,9 @@ namespace SFASimplifier.Writers
 
             foreach (var relevant in relevants)
             {
-                var feature = GetFeature(relevant);
+                var feature = GetFeature(
+                    location: relevant,
+                    preventMergingAttributes: preventMergingAttributes);
 
                 featureCollection.Add(feature);
 
@@ -148,8 +121,9 @@ namespace SFASimplifier.Writers
 
         private void LoadWays(IPackage parentPackage)
         {
-            var relevants = wayFactory.Ways
-                .Where(w => w.Links?.Any() == true).ToArray();
+            var relevants = linkFactory.Links
+                .SelectMany(l => l.Ways.Select(w => (Link: l, Way: w)))
+                .GroupBy(g => g.Way).ToArray();
 
             using var infoPackage = parentPackage.GetPackage(
                 items: relevants,
@@ -157,7 +131,12 @@ namespace SFASimplifier.Writers
 
             foreach (var relevant in relevants)
             {
-                var feature = GetFeature(relevant);
+                var links = relevant
+                    .Select(g => g.Link).ToArray();
+
+                var feature = GetFeature(
+                    way: relevant.Key,
+                    links: links);
 
                 featureCollection.Add(feature);
 

@@ -63,7 +63,7 @@ namespace SFASimplifier.Repositories
             {
                 var isValid = false;
 
-                if (attributesKey?.Any() == true)
+                if (attributesKey?.Any(k => !k.IsEmpty()) == true)
                 {
                     foreach (var attributeCheck in attributesKey)
                     {
@@ -83,7 +83,7 @@ namespace SFASimplifier.Repositories
 
                 if (isValid)
                 {
-                    if (attributesFilter?.Any() == true)
+                    if (attributesFilter?.Any(f => !f.Key.IsEmpty()) == true)
                     {
                         foreach (var attributeFilter in attributesFilter)
                         {

@@ -1,5 +1,4 @@
-﻿using NetTopologySuite.Algorithm;
-using NetTopologySuite.Geometries;
+﻿using NetTopologySuite.Geometries;
 using ProgressWatcher;
 using ProgressWatcher.Interfaces;
 using SFASimplifier.Extensions;
@@ -49,14 +48,16 @@ namespace SFASimplifier
             geometryFactory = new GeometryFactory();
 
             wayFactory = new WayFactory(
-                geometryFactory: geometryFactory);
+                geometryFactory: geometryFactory,
+                attributesKey: options.LineAttributesKey,
+                lineFilters: options.LineFilters);
 
             pointFactory = new PointFactory(
                 geometryFactory: geometryFactory);
 
             locationFactory = new LocationFactory(
                 geometryFactory: geometryFactory,
-                maxDistance: options.LocationsDistanceToOthers,
+                maxDistance: options.DistanceBetweenLocations,
                 fuzzyScore: options.LocationsFuzzyScore);
 
             segmentFactory = new SegmentFactory(
@@ -64,23 +65,24 @@ namespace SFASimplifier
                 pointFactory: pointFactory,
                 locationFactory: locationFactory,
                 keyAttributes: options.PointAttributesKey,
-                distanceNodeToLine: options.LocationsDistanceToLine);
-
-            var angleMin = AngleUtility.ToRadians(options.LinksAngleMin);
+                distanceToCapture: options.DistanceToCapture);
 
             chainFactory = new ChainFactory(
                 geometryFactory: geometryFactory,
                 locationFactory: locationFactory,
-                angleMin: angleMin);
+                angleMin: options.MergeAngleMin);
 
             linkFactory = new LinkFactory(
                 geometryFactory: geometryFactory,
-                angleMin: angleMin,
-                lengthSplit: options.LinksLengthSplit);
+                angleMin: options.LinksAngleMin,
+                lengthSplit: options.LinksLengthSplit,
+                distanceToMerge: options.DistanceToMerge,
+                distanceToJunction: options.DistanceToJunction);
 
             featureWriter = new FeatureWriter(
                 geometryFactory: geometryFactory,
-                wayFactory: wayFactory);
+                linkFactory: linkFactory,
+                preventMergingAttributes: options.PreventMergingAttributes);
         }
 
         #endregion Public Constructors
@@ -185,8 +187,6 @@ namespace SFASimplifier
                 parentPackage: infoPackage);
             wayFactory.Load(
                 lines: lineRepository.Features,
-                attributesKey: options.LineAttributesKey,
-                lineFilters: options.LineFilters,
                 parentPackage: infoPackage);
             pointFactory.LoadWays(
                 ways: wayFactory.Ways,

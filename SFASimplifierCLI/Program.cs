@@ -2,6 +2,7 @@
 using CommandLine.Text;
 using SFASimplifier.Models;
 using ShellProgressBar;
+using System.Diagnostics;
 
 namespace SFASimplifierCLI
 {
@@ -79,10 +80,13 @@ namespace SFASimplifierCLI
             }
             catch (Exception exception)
             {
-                Console.WriteLine(exception.Message);
+                Console.WriteLine(exception?.Message);
 
                 result = exception?.InnerException?.HResult
-                    ?? exception.HResult;
+                    ?? exception?.HResult
+                    ?? -1;
+
+                Debugger.Break();
             }
 
             return result;

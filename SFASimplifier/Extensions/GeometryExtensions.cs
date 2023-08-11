@@ -1,9 +1,11 @@
 ﻿using NetTopologySuite.Features;
 using NetTopologySuite.Geometries;
+using NetTopologySuite.Geometries.Prepared;
 using NetTopologySuite.LinearReferencing;
 using NetTopologySuite.Operation.Distance;
 using SFASimplifier.Models;
 using StringExtensions;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -45,21 +47,45 @@ namespace SFASimplifier.Extensions
             }
         }
 
-        public static double GetLength(this Geometry geometry)
+        public static IEnumerable<Coordinate> GetCoordinatesBefore(this Geometry geometry, Coordinate coordinate)
         {
-            var result = 0.0;
+            var position = geometry.GetPosition(coordinate);
 
-            if (geometry.Coordinates?.Length > 1)
+            var results = geometry.Coordinates
+                .Where(c => geometry.GetPosition(c) < position).ToArray();
+
+            foreach (var result in results)
             {
-                var coordinates = geometry.Coordinates.ToArray();
-
-                for (var index = 0; index < geometry.Coordinates.Length - 1; index++)
-                {
-                    result += coordinates[index].GetDistance(coordinates[index + 1]);
-                }
+                yield return result;
             }
 
-            return result;
+            yield return coordinate;
+        }
+
+        public static IEnumerable<Coordinate> GetCoordinatesBehind(this Geometry geometry, Coordinate coordinate)
+        {
+            var position = geometry.GetPosition(coordinate);
+
+            yield return coordinate;
+
+            var results = geometry.Coordinates
+                .Where(c => geometry.GetPosition(c) > position).ToArray();
+
+            foreach (var result in results)
+            {
+                yield return result;
+            }
+        }
+
+        public static Predicate<Geometry> GetIsInBufferPredicate(this Geometry geometry, double distanceInMeters)
+        {
+            var geoFactory = new PreparedGeometryFactory();
+
+            var distance = distanceInMeters / (111.32 * 1000 * Math.Cos(geometry.Coordinate.Y * (Math.PI / 180)));
+            var buffer = geometry.Buffer(distance);
+            var preparedGeometry = geoFactory.Create(buffer);
+
+            return geometry => preparedGeometry.Contains(geometry);
         }
 
         public static IEnumerable<IEnumerable<Geometry>> GetLengthGroups(this IEnumerable<Geometry> geometries,

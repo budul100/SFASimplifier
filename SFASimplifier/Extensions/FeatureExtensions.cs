@@ -1,8 +1,6 @@
 ﻿using NetTopologySuite.Features;
 using NetTopologySuite.Geometries;
-using NetTopologySuite.Geometries.Prepared;
 using StringExtensions;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -12,20 +10,6 @@ namespace SFASimplifier.Extensions
     internal static class FeatureExtensions
     {
         #region Public Methods
-
-        public static IEnumerable<Feature> GetAround(this IEnumerable<Feature> features, Geometry geometry, double meters)
-        {
-            var geoFactory = new PreparedGeometryFactory();
-
-            var distance = meters / (111.32 * 1000 * Math.Cos(geometry.Coordinate.Y * (Math.PI / 180)));
-            var buffer = geometry.Buffer(distance);
-            var preparedGeometry = geoFactory.Create(buffer);
-
-            var result = features
-                .Where(f => preparedGeometry.Contains(f.Geometry)).ToArray();
-
-            return result;
-        }
 
         public static string GetAttribute(this Feature feature, IEnumerable<string> keys)
         {
@@ -51,6 +35,63 @@ namespace SFASimplifier.Extensions
                 result = feature.Attributes?
                     .GetOptionalValue(key)?.ToString();
             }
+
+            return result;
+        }
+
+        public static AttributesTable GetAttributesTable(this IEnumerable<Feature> features, bool preventMerging)
+        {
+            var attributes = new Dictionary<string, object>();
+
+            var names = features?
+                .Where(f => f.Attributes?.Count > 0)
+                .Select(f => f.Attributes)
+                .SelectMany(a => a.GetNames())
+                .Distinct().OrderBy(n => n).ToArray();
+
+            if (features?.Any() == true)
+            {
+                foreach (var name in names)
+                {
+                    var groups = features
+                        .Select(f => f.GetAttribute(name))
+                        .Where(a => !a.IsEmpty())
+                        .GroupBy(n => n);
+
+                    var values = default(IEnumerable<string>);
+
+                    if (preventMerging)
+                    {
+                        values = groups
+                            .Select(g => g.Key)
+                            .OrderBy(n => n).ToArray();
+                    }
+                    else
+                    {
+                        values = groups
+                            .OrderByDescending(g => g.Count())
+                            .Select(g => g.Key).Take(1).ToArray();
+                    }
+
+                    var index = 0;
+
+                    foreach (var value in values)
+                    {
+                        var key = values.Count() > 1
+                            ? $"{name} ({++index})"
+                            : name;
+
+                        if (!attributes.ContainsKey(key))
+                        {
+                            attributes.Add(
+                                key: key,
+                                value: value);
+                        }
+                    }
+                }
+            }
+
+            var result = new AttributesTable(attributes);
 
             return result;
         }
