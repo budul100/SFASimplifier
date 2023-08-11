@@ -81,7 +81,7 @@ namespace SFASimplifier
 
             featureWriter = new FeatureWriter(
                 geometryFactory: geometryFactory,
-                linkFactory: linkFactory,
+                wayFactory: wayFactory,
                 preventMergingAttributes: options.PreventMergingAttributes);
         }
 

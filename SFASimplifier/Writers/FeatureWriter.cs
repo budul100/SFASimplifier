@@ -18,17 +18,17 @@ namespace SFASimplifier.Writers
 
         private readonly FeatureCollection featureCollection = new();
         private readonly GeometryFactory geometryFactory;
-        private readonly LinkFactory linkFactory;
         private readonly bool preventMergingAttributes;
+        private readonly WayFactory wayFactory;
 
         #endregion Private Fields
 
         #region Public Constructors
 
-        public FeatureWriter(GeometryFactory geometryFactory, LinkFactory linkFactory, bool preventMergingAttributes)
+        public FeatureWriter(GeometryFactory geometryFactory, WayFactory wayFactory, bool preventMergingAttributes)
         {
             this.geometryFactory = geometryFactory;
-            this.linkFactory = linkFactory;
+            this.wayFactory = wayFactory;
             this.preventMergingAttributes = preventMergingAttributes;
         }
 
@@ -98,8 +98,13 @@ namespace SFASimplifier.Writers
 
         private void LoadLocations(bool preventMergingAttributes, IPackage parentPackage)
         {
-            var relevants = linkFactory.Links.Select(l => l.From?.Main ?? l.From)
-                .Union(linkFactory.Links.Select(l => l.To?.Main ?? l.To))
+            var links = wayFactory.Ways
+                .Where(w => w.Links?.Any() == true)
+                .SelectMany(w => w.Links)
+                .Distinct().ToArray();
+
+            var relevants = links.Select(l => l.From?.Main ?? l.From)
+                .Union(links.Select(l => l.To?.Main ?? l.To))
                 .Where(l => l != default)
                 .OrderBy(l => l.Key?.ToString()).ToArray();
 
@@ -121,9 +126,8 @@ namespace SFASimplifier.Writers
 
         private void LoadWays(IPackage parentPackage)
         {
-            var relevants = linkFactory.Links
-                .SelectMany(l => l.Ways.Select(w => (Link: l, Way: w)))
-                .GroupBy(g => g.Way).ToArray();
+            var relevants = wayFactory.Ways
+                .Where(w => w.Links?.Any() == true).ToArray();
 
             using var infoPackage = parentPackage.GetPackage(
                 items: relevants,
@@ -131,12 +135,9 @@ namespace SFASimplifier.Writers
 
             foreach (var relevant in relevants)
             {
-                var links = relevant
-                    .Select(g => g.Link).ToArray();
-
                 var feature = GetFeature(
-                    way: relevant.Key,
-                    links: links);
+                    way: relevant,
+                    links: relevant.Links);
 
                 featureCollection.Add(feature);
 

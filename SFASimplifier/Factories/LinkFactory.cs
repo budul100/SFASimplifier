@@ -4,6 +4,7 @@ using ProgressWatcher.Interfaces;
 using SFASimplifier.Extensions;
 using SFASimplifier.Models;
 using SFASimplifier.Structs;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -46,7 +47,7 @@ namespace SFASimplifier.Factories
         public void Load(IEnumerable<Chain> chains, IPackage parentPackage)
         {
             using var infoPackage = parentPackage.GetPackage(
-                steps: 3,
+                steps: 4,
                 status: "Determine links");
 
             var allLinks = GetLinksAll(
@@ -60,6 +61,8 @@ namespace SFASimplifier.Factories
             var toMergeds = GetLinksTo(
                 links: fromMergeds,
                 parentPackage: infoPackage).ToArray();
+
+            toMergeds.AssignWays();
 
             Links = toMergeds;
         }

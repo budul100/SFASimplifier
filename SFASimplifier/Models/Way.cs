@@ -12,6 +12,8 @@ namespace SFASimplifier.Models
 
         public IEnumerable<Geometry> Geometries { get; set; }
 
+        public IEnumerable<Link> Links { get; set; }
+
         #endregion Public Properties
     }
 }
