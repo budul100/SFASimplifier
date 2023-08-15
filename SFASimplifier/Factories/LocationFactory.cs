@@ -3,7 +3,6 @@ using NetTopologySuite.Features;
 using NetTopologySuite.Geometries;
 using ProgressWatcher.Interfaces;
 using SFASimplifier.Extensions;
-using SFASimplifier.Models;
 using StringExtensions;
 using System.Collections.Generic;
 using System.Linq;
@@ -18,16 +17,21 @@ namespace SFASimplifier.Factories
         private readonly double fuzzyScore;
         private readonly GeometryFactory geometryFactory;
         private readonly HashSet<Models.Location> locations = new();
-        private readonly double maxDistance;
+        private readonly double maxDistanceAnonymous;
+        private readonly double maxDistanceNamed;
+        private readonly PointFactory pointFactory;
 
         #endregion Private Fields
 
         #region Public Constructors
 
-        public LocationFactory(GeometryFactory geometryFactory, double maxDistance, double fuzzyScore)
+        public LocationFactory(GeometryFactory geometryFactory, PointFactory pointFactory, double maxDistanceNamed,
+            double maxDistanceAnonymous, double fuzzyScore)
         {
             this.geometryFactory = geometryFactory;
-            this.maxDistance = maxDistance;
+            this.pointFactory = pointFactory;
+            this.maxDistanceNamed = maxDistanceNamed;
+            this.maxDistanceAnonymous = maxDistanceAnonymous;
             this.fuzzyScore = fuzzyScore;
         }
 
@@ -42,44 +46,35 @@ namespace SFASimplifier.Factories
 
         #region Public Methods
 
-        public void Condense(IEnumerable<Segment> segments, IPackage parentPackage)
-        {
-            var fromNodes = segments
-                .Select(s => s.From);
-            var toNodes = segments
-                .Select(s => s.To);
-
-            var locationGroups = fromNodes.Union(toNodes).Distinct()
-                .GroupBy(n => n.Location).ToArray();
-
-            using var infoPackage = parentPackage.GetPackage(
-                items: locationGroups,
-                status: "Create location geometry.");
-
-            foreach (var locationGroup in locationGroups)
-            {
-                var relevants = locationGroup.Any(l => !l.IsBorder)
-                    ? locationGroup.Where(l => !l.IsBorder)
-                    : locationGroup;
-
-                var coordinates = relevants
-                    .Select(n => n.Coordinate)
-                    .Distinct().ToArray();
-
-                SetGeometry(
-                    location: locationGroup.Key,
-                    coordinates: coordinates);
-
-                infoPackage.NextStep();
-            }
-        }
-
-        public Models.Location Get(string key, bool isBorder, Feature feature)
+        public Models.Location Get(string key, bool isBorder, IEnumerable<Feature> points)
         {
             var result = GetLocation(
                 key: key,
                 isBorder: isBorder,
-                feature: feature);
+                points: points);
+
+            return result;
+        }
+
+        public Models.Location Get(Coordinate coordinate)
+        {
+            var point = pointFactory.Get(coordinate);
+
+            var result = GetLocation(
+                key: default,
+                isBorder: false,
+                points: new Feature[] { point });
+
+            var coordinates = new HashSet<Coordinate> { coordinate };
+
+            if (result?.Centroid?.Coordinate != default)
+            {
+                coordinates.Add(result.Centroid.Coordinate);
+            }
+
+            Set(
+                location: result,
+                coordinates: coordinates);
 
             return result;
         }
@@ -88,7 +83,7 @@ namespace SFASimplifier.Factories
         {
             var result = from == to;
 
-            if (from != to
+            if (!result
                 && !(from.IsBorder || to.IsBorder)
                 && !from.Key.IsEmpty()
                 && !to.Key.IsEmpty()
@@ -110,6 +105,31 @@ namespace SFASimplifier.Factories
             }
 
             return result;
+        }
+
+        public void Set(Models.Location location, IEnumerable<Coordinate> coordinates)
+        {
+            if (coordinates.Count() == 1)
+            {
+                location.Geometry = geometryFactory.CreatePoint(
+                    coordinate: coordinates.Single());
+                location.Centroid = location.Geometry;
+            }
+            else if (coordinates.Count() == 2)
+            {
+                location.Geometry = geometryFactory.CreateLineString(
+                    coordinates: coordinates.ToArray());
+                location.Centroid = location.Geometry.Boundary.Centroid;
+            }
+            else
+            {
+                var ring = coordinates.ToList();
+                ring.Add(coordinates.First());
+
+                location.Geometry = geometryFactory.CreatePolygon(
+                    coordinates: ring.ToArray());
+                location.Centroid = location.Geometry.Boundary.Centroid;
+            }
         }
 
         public void Tidy(IPackage parentPackage)
@@ -137,7 +157,7 @@ namespace SFASimplifier.Factories
                     .SelectMany(l => l.Geometry.Coordinates)
                     .Distinct().ToArray();
 
-                SetGeometry(
+                Set(
                     location: result,
                     coordinates: coordinates);
 
@@ -154,15 +174,32 @@ namespace SFASimplifier.Factories
 
         #region Private Methods
 
-        private Models.Location GetLocation(string key, bool isBorder, Feature feature)
+        private Models.Location GetLocation(string key, bool isBorder, IEnumerable<Feature> points)
         {
-            var relevants = locations
-                .Where(l => isBorder || key.IsEmpty() || l.Key.IsEmpty() || Fuzz.Ratio(key, l.Key) >= fuzzyScore);
+            var result = default(Models.Location);
 
-            var result = feature == default
-                ? relevants.FirstOrDefault()
-                : relevants.Where(l => l.Features.GetDistance(feature) < maxDistance)
-                    .OrderBy(l => l.Features.GetDistance(feature)).FirstOrDefault();
+            if (!key.IsEmpty())
+            {
+                var relevants = locations
+                    .Where(l => !l.Key.IsEmpty()
+                        && Fuzz.Ratio(key, l.Key) >= fuzzyScore);
+
+                result = points?.Any() != true
+                    ? relevants.FirstOrDefault()
+                    : relevants.Where(l => l.Features.GetDistance(points) < maxDistanceNamed)
+                        .OrderBy(l => l.Features.GetDistance(points)).FirstOrDefault();
+            }
+
+            if (result == default)
+            {
+                var relevants = locations
+                    .Where(l => isBorder || key.IsEmpty() || l.Key.IsEmpty());
+
+                result = points?.Any() != true
+                    ? relevants.FirstOrDefault()
+                    : relevants.Where(l => l.Features.GetDistance(points) < maxDistanceAnonymous)
+                        .OrderBy(l => l.Features.GetDistance(points)).FirstOrDefault();
+            }
 
             if (result == default)
             {
@@ -180,38 +217,17 @@ namespace SFASimplifier.Factories
                 result.Key = key;
                 result.IsBorder = false;
             }
-
-            if (feature != default)
+            else if (result.Features.GetDistance(points) > 0)
             {
-                result.Features.Add(feature);
+                result.IsBorder = false;
+            }
+
+            if (points?.Any() == true)
+            {
+                result.Features.UnionWith(points);
             }
 
             return result;
-        }
-
-        private void SetGeometry(Models.Location location, IEnumerable<Coordinate> coordinates)
-        {
-            if (coordinates.Count() == 1)
-            {
-                location.Geometry = geometryFactory.CreatePoint(
-                    coordinate: coordinates.Single());
-                location.Centroid = location.Geometry;
-            }
-            else if (coordinates.Count() == 2)
-            {
-                location.Geometry = geometryFactory.CreateLineString(
-                    coordinates: coordinates.ToArray());
-                location.Centroid = location.Geometry.Boundary.Centroid;
-            }
-            else
-            {
-                var ring = coordinates.ToList();
-                ring.Add(coordinates.First());
-
-                location.Geometry = geometryFactory.CreatePolygon(
-                    coordinates: ring.ToArray());
-                location.Centroid = location.Geometry.Boundary.Centroid;
-            }
         }
 
         #endregion Private Methods

@@ -16,7 +16,7 @@ namespace SFASimplifier
     {
         #region Private Fields
 
-        private const double StatusWeightDeterminingLinks = 0.2;
+        private const double StatusWeightDeterminingConnections = 0.2;
         private const double StatusWeightDeterminingSegments = 0.6;
         private const double StatusWeightLoadingFiles = 0.1;
 
@@ -50,14 +50,16 @@ namespace SFASimplifier
             wayFactory = new WayFactory(
                 geometryFactory: geometryFactory,
                 attributesKey: options.LineAttributesKey,
-                lineFilters: options.LineFilters);
+                lineFilters: options.LineAttributesKeyFilter);
 
             pointFactory = new PointFactory(
                 geometryFactory: geometryFactory);
 
             locationFactory = new LocationFactory(
                 geometryFactory: geometryFactory,
-                maxDistance: options.DistanceBetweenLocations,
+                pointFactory: pointFactory,
+                maxDistanceNamed: options.DistanceBetweenLocationsNamed,
+                maxDistanceAnonymous: options.DistanceBetweenLocationsAnonymous,
                 fuzzyScore: options.LocationsFuzzyScore);
 
             segmentFactory = new SegmentFactory(
@@ -74,13 +76,13 @@ namespace SFASimplifier
 
             linkFactory = new LinkFactory(
                 geometryFactory: geometryFactory,
+                locationFactory: locationFactory,
                 angleMin: options.LinksAngleMin,
                 lengthSplit: options.LinksLengthSplit,
-                distanceToMerge: options.DistanceToMerge,
-                distanceToJunction: options.DistanceToJunction);
+                distanceToJunction: options.DistanceToJunction,
+                distanceToMerge: options.DistanceToMerge);
 
             featureWriter = new FeatureWriter(
-                geometryFactory: geometryFactory,
                 wayFactory: wayFactory,
                 preventMergingAttributes: options.PreventMergingAttributes);
         }
@@ -116,12 +118,11 @@ namespace SFASimplifier
         private void DetermineLinks(IPackage parentPackage)
         {
             using var infoPackage = parentPackage.GetPackage(
-                steps: 4,
-                status: "Determining links.",
-                weight: StatusWeightDeterminingLinks);
+                steps: 5,
+                status: "Determine connections.",
+                weight: StatusWeightDeterminingConnections);
 
-            locationFactory.Condense(
-                segments: segmentFactory.Segments,
+            segmentFactory.Tidy(
                 parentPackage: infoPackage);
 
             chainFactory.Load(
@@ -134,12 +135,15 @@ namespace SFASimplifier
             linkFactory.Load(
                 chains: chainFactory.Chains,
                 parentPackage: infoPackage);
+
+            linkFactory.Tidy(
+                parentPackage: infoPackage);
         }
 
         private void DetermineSegments(IPackage parentPackage)
         {
             using var infoPackage = parentPackage.GetPackage(
-                status: "Determining segments.",
+                status: "Determine segments.",
                 weight: StatusWeightDeterminingSegments);
 
             segmentFactory.Load(
@@ -151,7 +155,7 @@ namespace SFASimplifier
         {
             using var infoPackage = parentPackage.GetPackage(
                 steps: 6,
-                status: "Loading features.");
+                status: "Load features.");
 
             var collectionRepository = new CollectionRepository();
 
@@ -197,7 +201,7 @@ namespace SFASimplifier
         {
             using var infoPackage = parentPackage.GetPackage(
                 items: inputPaths,
-                status: "Loading files.",
+                status: "Load files.",
                 weight: StatusWeightLoadingFiles);
 
             foreach (var inputPath in inputPaths)
@@ -235,7 +239,7 @@ namespace SFASimplifier
         private void WriteFiles(IPackage parentPackage)
         {
             using var infoPackage = parentPackage.GetPackage(
-                status: "Writing features collection.");
+                status: "Write features collection.");
 
             featureWriter.Write(
                 path: options.OutputPath,

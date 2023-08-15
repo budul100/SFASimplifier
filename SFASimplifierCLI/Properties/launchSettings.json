@@ -2,7 +2,7 @@
   "profiles": {
     "Convert Example": {
       "commandName": "Project",
-      "commandLineArgs": "-i \"..\\..\\..\\..\\Additionals\\Samples\\Example.geojson\" -o \"..\\..\\..\\..\\Additionals\\Samples\\Example_.geojson\" --lineattrkey \"\" --lineattrfilter \"\""
+      "commandLineArgs": "-i \"..\\..\\..\\..\\Additionals\\Samples\\Example.geojson\" -o \"..\\..\\..\\..\\Additionals\\Samples\\Example_.geojson\""
     },
     "Convert Bremen": {
       "commandName": "Project",

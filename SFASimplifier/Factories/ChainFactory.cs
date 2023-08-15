@@ -3,6 +3,7 @@ using NetTopologySuite.Geometries;
 using ProgressWatcher.Interfaces;
 using SFASimplifier.Extensions;
 using SFASimplifier.Models;
+using SFASimplifier.Structs;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -13,7 +14,7 @@ namespace SFASimplifier.Factories
         #region Private Fields
 
         private readonly double angleMin;
-        private readonly Dictionary<int, Chain> chains = new();
+        private readonly Dictionary<(int, double), Chain> chains = new();
         private readonly GeometryFactory geometryFactory;
         private readonly LocationFactory locationFactory;
 
@@ -61,13 +62,26 @@ namespace SFASimplifier.Factories
 
         private void AddChain(Chain chain)
         {
-            var key = chain.Segments.GetSequenceHash();
-
-            if (!chains.ContainsKey(key))
+            if (!locationFactory.IsSimilar(
+                from: chain.From.Location,
+                to: chain.To.Location))
             {
-                chains.Add(
-                    key: key,
-                    value: chain);
+                var hash = chain.Segments.GetSequenceHash();
+                var length = chain.Geometry.GetLength();
+                var key = (hash, length);
+
+                if (!chains.ContainsKey(key))
+                {
+                    chain.Length = length;
+
+                    chain.ConnectionKey = new ConnectionKey(
+                        from: chain.From.Location,
+                        to: chain.To.Location);
+
+                    chains.Add(
+                        key: key,
+                        value: chain);
+                }
             }
         }
 
@@ -101,7 +115,8 @@ namespace SFASimplifier.Factories
             var relevants = segments
                 .Where(s => !s.From.Location.IsBorder
                     && s.To.Location.IsBorder)
-                .OrderBy(s => s.Geometry.Length).ToArray();
+                .OrderBy(s => s.From.Location.Key)
+                .ThenBy(s => s.Geometry.Length).ToArray();
 
             using var infoPackage = parentPackage.GetPackage(
                 items: relevants,
@@ -120,6 +135,7 @@ namespace SFASimplifier.Factories
 
                 FindChain(
                     chain: chain,
+                    ways: relevant.Ways.ToHashSet(),
                     nexts: nexts,
                     covereds: new HashSet<Segment>());
 
@@ -127,41 +143,38 @@ namespace SFASimplifier.Factories
             }
         }
 
-        private void FindChain(Chain chain, IDictionary<Models.Location, Segment[]> nexts,
+        private void FindChain(Chain chain, HashSet<Way> ways, IDictionary<Models.Location, Segment[]> nexts,
             HashSet<Segment> covereds)
         {
             if (nexts.ContainsKey(chain.To.Location))
             {
                 var relevants = nexts[chain.To.Location]
                     .Where(s => !covereds.Contains(s)
-                        && !chain.Locations.Contains(s.To.Location))
+                        && !chain.Locations.Contains(s.To.Location)
+                        && HasValidAngle(
+                            chain: chain,
+                            segment: s))
                     .OrderBy(s => s.Geometry.Length).ToArray();
 
                 foreach (var relevant in relevants)
                 {
-                    if (HasValidAngle(
-                        chain: chain,
-                        segment: relevant))
+                    var result = GetChain(
+                        segment: relevant,
+                        given: chain);
+
+                    covereds.UnionWith(result.Segments);
+
+                    if (result.To.Location.IsBorder)
                     {
-                        var result = GetChain(
-                            segment: relevant,
-                            given: chain);
-
-                        covereds.UnionWith(result.Segments);
-
-                        if (result.To.Location.IsBorder)
-                        {
-                            FindChain(
-                                chain: result,
-                                nexts: nexts,
-                                covereds: covereds);
-                        }
-                        else if (!locationFactory.IsSimilar(
-                            from: result.From.Location,
-                            to: result.To.Location))
-                        {
-                            AddChain(result);
-                        }
+                        FindChain(
+                            chain: result,
+                            ways: ways,
+                            nexts: nexts,
+                            covereds: covereds);
+                    }
+                    else
+                    {
+                        AddChain(result);
                     }
                 }
             }
@@ -189,7 +202,9 @@ namespace SFASimplifier.Factories
                 var coordinates = new List<Coordinate>();
 
                 coordinates.AddRange(given.Geometry.Coordinates);
+                coordinates.Add(segment.From.Location.Centroid.Coordinate);
                 coordinates.AddRange(segment.Geometry.Coordinates);
+                coordinates.Add(segment.To.Location.Centroid.Coordinate);
 
                 result.Geometry = geometryFactory.CreateLineString(coordinates.ToArray());
             }

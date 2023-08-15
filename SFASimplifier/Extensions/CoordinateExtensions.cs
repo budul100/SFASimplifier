@@ -10,20 +10,51 @@ namespace SFASimplifier.Extensions
 {
     internal static class CoordinateExtensions
     {
+        #region Private Fields
+
+        private static readonly MathTransform mathTransform = new CoordinateTransformationFactory().CreateFromCoordinateSystems(
+            sourceCS: GeographicCoordinateSystem.WGS84,
+            targetCS: ProjectedCoordinateSystem.WebMercator).MathTransform;
+
+        #endregion Private Fields
+
         #region Public Methods
 
-        public static double GetDistance(this Coordinate left, Coordinate right)
+        public static IEnumerable<Coordinate> GetCoordinates(this IEnumerable<Coordinate> coordinates,
+            Models.Location from, Models.Location to)
         {
-            var ctfac = new CoordinateTransformationFactory();
+            var fromIsFirst = from.Centroid.Coordinate.GetLength(coordinates.First()) <
+                to.Centroid.Coordinate.GetLength(coordinates.First());
 
-            var from = GeographicCoordinateSystem.WGS84;
-            var to = ProjectedCoordinateSystem.WebMercator;
+            yield return from.Centroid.Coordinate;
 
-            var trans = ctfac.CreateFromCoordinateSystems(
-                sourceCS: from,
-                targetCS: to);
-            var mathTransform = trans.MathTransform;
+            if (!fromIsFirst)
+            {
+                coordinates = coordinates.Reverse().ToArray();
+            }
 
+            foreach (var mergedCoordinate in coordinates)
+            {
+                yield return mergedCoordinate;
+            }
+
+            yield return to.Centroid.Coordinate;
+        }
+
+        public static double GetLength(this IEnumerable<Coordinate> coordinates)
+        {
+            var result = 0.0;
+
+            for (var index = 0; index < coordinates.Count() - 1; index++)
+            {
+                result += coordinates.ElementAt(index).GetLength(coordinates.ElementAt(index + 1));
+            }
+
+            return result;
+        }
+
+        public static double GetLength(this Coordinate left, Coordinate right)
+        {
             var (leftX, leftY) = mathTransform.Transform(
                 x: left.X,
                 y: left.Y);
@@ -55,10 +86,10 @@ namespace SFASimplifier.Extensions
             return angleDeg <= angleMin;
         }
 
-        public static IEnumerable<Coordinate> WithoutAcute(this IEnumerable<Coordinate> coordinates,
+        public static IEnumerable<Coordinate> WithoutAcutes(this IEnumerable<Coordinate> coordinates,
             double angleMin)
         {
-            var result = coordinates
+            var result = coordinates.ToArray()
                 .Reverse().Distinct().ToArray();
 
             result = result.WithoutAcuteFront(angleMin)
@@ -73,33 +104,6 @@ namespace SFASimplifier.Extensions
         #endregion Public Methods
 
         #region Private Methods
-
-        private static IEnumerable<Coordinate> WithoutAcuteBack(this IEnumerable<Coordinate> coordinates,
-            double angleMin)
-        {
-            yield return coordinates.Last();
-
-            if (coordinates.Count() > 1)
-            {
-                var allCoordinates = coordinates.ToArray();
-                var lastCoordinate = allCoordinates.Last();
-
-                for (var index = allCoordinates.Length - 2; index > 0; index--)
-                {
-                    if (!allCoordinates[index].IsAcuteAngle(
-                        before: lastCoordinate,
-                        after: allCoordinates[index - 1],
-                        angleMin: angleMin))
-                    {
-                        yield return allCoordinates[index];
-
-                        lastCoordinate = allCoordinates[index];
-                    }
-                }
-
-                yield return allCoordinates[0];
-            }
-        }
 
         private static IEnumerable<Coordinate> WithoutAcuteFront(this IEnumerable<Coordinate> coordinates,
             double angleMin)

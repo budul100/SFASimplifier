@@ -15,7 +15,7 @@ namespace SFASimplifier.Extensions
     {
         #region Private Fields
 
-        private const int TakeMaxGeometries = 1000;
+        private const int LengthDigits = 4;
 
         #endregion Private Fields
 
@@ -30,7 +30,7 @@ namespace SFASimplifier.Extensions
                 var position = geometry.GetPosition(coordinate);
 
                 if (!point.GetAttribute(keyAttributes).IsEmpty()
-                    || point.Geometry.Coordinate.GetDistance(coordinate) <= distanceNodeToLine)
+                    || point.Geometry.Coordinate.GetLength(coordinate) <= distanceNodeToLine)
                 {
                     var isBorder = point.GetAttribute(keyAttributes).IsEmpty();
 
@@ -88,45 +88,11 @@ namespace SFASimplifier.Extensions
             return geometry => preparedGeometry.Contains(geometry);
         }
 
-        public static IEnumerable<IEnumerable<Geometry>> GetLengthGroups(this IEnumerable<Geometry> geometries,
-            double lengthSplit)
+        public static double GetLength(this Geometry geometry)
         {
-            if (geometries.Any())
-            {
-                var givens = geometries
-                    .OrderBy(g => g.Length).ToHashSet();
+            var result = geometry.Coordinates.GetLength();
 
-                var result = new HashSet<Geometry>();
-                var currentSplit = 1 + lengthSplit;
-                var minLength = givens.First().Length;
-
-                while (givens.Any())
-                {
-                    if (givens.First().Length <= (lengthSplit * currentSplit))
-                    {
-                        result.Add(givens.First());
-                        givens.Remove(givens.First());
-                    }
-                    else
-                    {
-                        if (result.Any())
-                        {
-                            yield return result
-                                .Take(TakeMaxGeometries).ToArray();
-
-                            result = new HashSet<Geometry>();
-                        }
-
-                        currentSplit += lengthSplit;
-                    }
-                }
-
-                if (result.Any())
-                {
-                    yield return result;
-                    result = new HashSet<Geometry>();
-                }
-            }
+            return result;
         }
 
         public static Coordinate GetNearest(this Geometry current, Geometry other)
@@ -144,9 +110,13 @@ namespace SFASimplifier.Extensions
                 linearGeom: geometry,
                 inputPt: coordinate);
 
-            var result = LengthLocationMap.GetLength(
+            var length = LengthLocationMap.GetLength(
                 linearGeom: geometry,
                 loc: loc);
+
+            var result = Math.Round(
+                value: length,
+                digits: LengthDigits);
 
             return result;
         }

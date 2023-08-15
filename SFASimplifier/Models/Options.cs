@@ -9,11 +9,18 @@ namespace SFASimplifier.Models
         #region Public Properties
 
         [Option(
-            longName: "distlocations",
-            HelpText = "Maximum distance of two points in meters to be merged into the same location.",
+            longName: "distlocationsanonymous",
+            HelpText = "Maximum distance in meters of two points without a name to be merged into the same location.",
             Required = false,
-            Default = 250)]
-        public int DistanceBetweenLocations { get; set; }
+            Default = 100)]
+        public int DistanceBetweenLocationsAnonymous { get; set; }
+
+        [Option(
+            longName: "distlocationsnamed",
+            HelpText = "Maximum distance in meters of two points with the same name (based on the locfuzzyscore) to be merged into the same location.",
+            Required = false,
+            Default = 500)]
+        public int DistanceBetweenLocationsNamed { get; set; }
 
         [Option(
             longName: "distcapture",
@@ -26,14 +33,15 @@ namespace SFASimplifier.Models
             longName: "distjunction",
             HelpText = "Minimum distance between the end of a link and a junction to have this point considered as own location.",
             Required = false,
-            Default = 500)]
+            Default = 100)]
         public int DistanceToJunction { get; set; }
 
         [Option(
             longName: "distmerge",
-            HelpText = "Maximum distance between lines to be merged into a single line. This value determines the positions of additional junction points on the lines.",
+            HelpText = "Maximum distance between lines to be merged into a single line. " +
+                "This value determines the positions of additional junction points on the lines.",
             Required = false,
-            Default = 100)]
+            Default = 50)]
         public int DistanceToMerge { get; set; }
 
         [Option(
@@ -70,11 +78,11 @@ namespace SFASimplifier.Models
         public IEnumerable<string> LineAttributesKey { get; set; }
 
         [Option(
-            longName: "linefilter",
+            longName: "lineattrkeyfilter",
             HelpText = "One or multiple values of the line key attributes which the line input should be filtered for.",
             Separator = ',',
             Required = false)]
-        public IEnumerable<string> LineFilters { get; set; }
+        public IEnumerable<string> LineAttributesKeyFilter { get; set; }
 
         [Option(
             longName: "linetypes",
@@ -101,7 +109,7 @@ namespace SFASimplifier.Models
                 "when it should be considered as a new link between two locations. " +
                 "This value allows to create multiple links between stations based on their lengthes.",
             Required = false,
-            Default = 20)]
+            Default = 25)]
         public int LinksLengthSplit { get; set; }
 
         [Option(
@@ -121,7 +129,7 @@ namespace SFASimplifier.Models
         public double MergeAngleMin { get; set; }
 
         [Option(
-                shortName: 'o',
+            shortName: 'o',
             longName: "outputpath",
             HelpText = "Path of the resulting geojson features file.",
             Required = true)]

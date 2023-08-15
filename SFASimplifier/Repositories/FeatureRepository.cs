@@ -25,8 +25,12 @@ namespace SFASimplifier.Repositories
             IEnumerable<KeyValuePair<string, string>> attributesFilter)
         {
             this.types = types;
-            this.attributesKey = attributesKey;
-            this.attributesFilter = attributesFilter;
+
+            this.attributesKey = attributesKey?
+                .Where(k => !k.IsEmpty()).ToArray();
+
+            this.attributesFilter = attributesFilter?
+                .Where(f => !f.Key.IsEmpty()).ToArray();
         }
 
         #endregion Public Constructors
@@ -63,7 +67,7 @@ namespace SFASimplifier.Repositories
             {
                 var isValid = false;
 
-                if (attributesKey?.Any(k => !k.IsEmpty()) == true)
+                if (attributesKey?.Any() == true)
                 {
                     foreach (var attributeCheck in attributesKey)
                     {
@@ -83,7 +87,7 @@ namespace SFASimplifier.Repositories
 
                 if (isValid)
                 {
-                    if (attributesFilter?.Any(f => !f.Key.IsEmpty()) == true)
+                    if (attributesFilter?.Any() == true)
                     {
                         foreach (var attributeFilter in attributesFilter)
                         {

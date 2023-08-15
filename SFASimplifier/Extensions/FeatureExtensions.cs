@@ -96,9 +96,15 @@ namespace SFASimplifier.Extensions
             return result;
         }
 
-        public static double GetDistance(this IEnumerable<Feature> features, Feature feature)
+        public static double GetDistance(this IEnumerable<Feature> givens, IEnumerable<Feature> others)
         {
-            var result = features.Min(f => f.Geometry.Coordinate.GetDistance(feature.Geometry.Coordinate));
+            var result = 0.0;
+
+            if ((givens?.Any() == true)
+                && (others?.Any() == true))
+            {
+                result = givens.Min(g => others.Min(o => g.Geometry.Coordinate.GetLength(o.Geometry.Coordinate)));
+            }
 
             return result;
         }

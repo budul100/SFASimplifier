@@ -3,7 +3,6 @@ using NetTopologySuite.Geometries;
 using ProgressWatcher.Interfaces;
 using SFASimplifier.Models;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace SFASimplifier.Factories
 {
@@ -32,6 +31,14 @@ namespace SFASimplifier.Factories
         #endregion Public Properties
 
         #region Public Methods
+
+        public Feature Get(Coordinate coordinate)
+        {
+            var geometry = geometryFactory.CreatePoint(coordinate);
+            var result = GetPoint(geometry);
+
+            return result;
+        }
 
         public void LoadPoints(IEnumerable<Feature> features, IPackage parentPackage)
         {
@@ -72,21 +79,23 @@ namespace SFASimplifier.Factories
         {
             foreach (var geometry in way.Geometries)
             {
-                var fromGeometry = geometryFactory
-                    .CreatePoint(geometry.Coordinates[0]);
+                Get(geometry.Coordinates[0]);
 
-                AddPoint(
-                    geometry: fromGeometry);
-
-                var toGeometry = geometryFactory
-                    .CreatePoint(geometry.Coordinates.Last());
-
-                AddPoint(
-                    geometry: toGeometry);
+                Get(geometry.Coordinates[^1]);
             }
         }
 
-        private void AddPoint(Geometry geometry)
+        private void AddPoint(Geometry geometry, Feature feature)
+        {
+            if (!points.ContainsKey(geometry))
+            {
+                points.Add(
+                    key: geometry,
+                    value: feature);
+            }
+        }
+
+        private Feature GetPoint(Geometry geometry)
         {
             if (!points.ContainsKey(geometry))
             {
@@ -99,16 +108,8 @@ namespace SFASimplifier.Factories
                     key: geometry,
                     value: feature);
             }
-        }
 
-        private void AddPoint(Geometry geometry, Feature feature)
-        {
-            if (!points.ContainsKey(geometry))
-            {
-                points.Add(
-                    key: geometry,
-                    value: feature);
-            }
+            return points[geometry];
         }
 
         #endregion Private Methods

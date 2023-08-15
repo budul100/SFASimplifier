@@ -24,7 +24,7 @@ namespace SFASimplifier.Factories
         #region Public Constructors
 
         public WayFactory(GeometryFactory geometryFactory, IEnumerable<string> attributesKey,
-                   IEnumerable<string> lineFilters)
+            IEnumerable<string> lineFilters)
         {
             this.geometryFactory = geometryFactory;
             this.attributesKey = attributesKey;

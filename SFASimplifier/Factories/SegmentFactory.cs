@@ -54,7 +54,7 @@ namespace SFASimplifier.Factories
 
             using var infoPackage = parentPackage.GetPackage(
                 items: geometryGroups,
-                status: "Determining segments.");
+                status: "Determine segments.");
 
             foreach (var geometryGroup in geometryGroups)
             {
@@ -73,6 +73,38 @@ namespace SFASimplifier.Factories
                         nodes: nodes,
                         ways: currentWays);
                 }
+
+                infoPackage.NextStep();
+            }
+        }
+
+        public void Tidy(IPackage parentPackage)
+        {
+            var fromNodes = Segments
+                .Select(s => s.From);
+            var toNodes = Segments
+                .Select(s => s.To);
+
+            var locationGroups = fromNodes.Union(toNodes).Distinct()
+                .GroupBy(n => n.Location).ToArray();
+
+            using var infoPackage = parentPackage.GetPackage(
+                items: locationGroups,
+                status: "Create location geometry.");
+
+            foreach (var locationGroup in locationGroups)
+            {
+                var relevants = locationGroup.Any(l => !l.IsBorder)
+                    ? locationGroup.Where(l => !l.IsBorder)
+                    : locationGroup;
+
+                var coordinates = relevants
+                    .Select(n => n.Coordinate)
+                    .Distinct().ToArray();
+
+                locationFactory.Set(
+                    location: locationGroup.Key,
+                    coordinates: coordinates);
 
                 infoPackage.NextStep();
             }
@@ -183,19 +215,26 @@ namespace SFASimplifier.Factories
 
             foreach (var pointGroup in pointGroups)
             {
-                var relevants = geometry.FilterNodes(
+                var key = pointGroup.GetPrimaryAttribute(keyAttributes);
+
+                var nodes = geometry.FilterNodes(
                     points: pointGroup,
                     keyAttributes: keyAttributes,
                     distanceNodeToLine: distanceToCapture).ToArray();
 
-                var key = pointGroup.GetPrimaryAttribute(keyAttributes);
+                var isBorder = nodes.All(p => p.IsBorder);
 
-                foreach (var relevant in relevants)
+                var points = nodes
+                    .Select(n => n.Point).ToArray();
+
+                var result = locationFactory.Get(
+                    key: key,
+                    isBorder: isBorder,
+                    points: points);
+
+                foreach (var relevant in nodes)
                 {
-                    relevant.Location = locationFactory.Get(
-                        key: key,
-                        isBorder: relevant.IsBorder,
-                        feature: relevant.Point);
+                    relevant.Location = result;
 
                     yield return relevant;
                 }

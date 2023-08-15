@@ -1,12 +1,9 @@
 ﻿using NetTopologySuite.Features;
-using NetTopologySuite.Geometries;
 using NetTopologySuite.IO;
 using Newtonsoft.Json;
 using ProgressWatcher.Interfaces;
 using SFASimplifier.Extensions;
 using SFASimplifier.Factories;
-using SFASimplifier.Models;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
@@ -17,7 +14,6 @@ namespace SFASimplifier.Writers
         #region Private Fields
 
         private readonly FeatureCollection featureCollection = new();
-        private readonly GeometryFactory geometryFactory;
         private readonly bool preventMergingAttributes;
         private readonly WayFactory wayFactory;
 
@@ -25,9 +21,8 @@ namespace SFASimplifier.Writers
 
         #region Public Constructors
 
-        public FeatureWriter(GeometryFactory geometryFactory, WayFactory wayFactory, bool preventMergingAttributes)
+        public FeatureWriter(WayFactory wayFactory, bool preventMergingAttributes)
         {
-            this.geometryFactory = geometryFactory;
             this.wayFactory = wayFactory;
             this.preventMergingAttributes = preventMergingAttributes;
         }
@@ -43,7 +38,6 @@ namespace SFASimplifier.Writers
                 status: "Create feature collection");
 
             LoadLocations(
-                preventMergingAttributes: preventMergingAttributes,
                 parentPackage: infoPackage);
 
             LoadWays(
@@ -58,45 +52,7 @@ namespace SFASimplifier.Writers
 
         #region Private Methods
 
-        private static Feature GetFeature(Models.Location location, bool preventMergingAttributes)
-        {
-            var table = location.Features.GetAttributesTable(
-                preventMerging: preventMergingAttributes);
-
-            var attributeTable = new AttributesTable(table);
-
-            var result = new Feature(
-                geometry: location.Centroid,
-                attributes: attributeTable);
-
-            return result;
-        }
-
-        private Feature GetFeature(Way way, IEnumerable<Link> links)
-        {
-            Geometry geometry;
-
-            var geometries = links
-                .Select(l => geometryFactory.CreateLineString(l.Coordinates.ToArray())).ToArray();
-
-            if (geometries.Length > 1)
-            {
-                var lineStrings = geometries.OfType<LineString>().ToArray();
-                geometry = geometryFactory.CreateMultiLineString(lineStrings);
-            }
-            else
-            {
-                geometry = geometries.Single();
-            }
-
-            var result = new Feature(
-                geometry: geometry,
-                attributes: way.Feature.Attributes);
-
-            return result;
-        }
-
-        private void LoadLocations(bool preventMergingAttributes, IPackage parentPackage)
+        private void LoadLocations(IPackage parentPackage)
         {
             var links = wayFactory.Ways
                 .Where(w => w.Links?.Any() == true)
@@ -114,9 +70,12 @@ namespace SFASimplifier.Writers
 
             foreach (var relevant in relevants)
             {
-                var feature = GetFeature(
-                    location: relevant,
+                var attributes = relevant.GetAttributes(
                     preventMergingAttributes: preventMergingAttributes);
+
+                var feature = new Feature(
+                    geometry: relevant.Centroid,
+                    attributes: attributes);
 
                 featureCollection.Add(feature);
 
@@ -135,9 +94,9 @@ namespace SFASimplifier.Writers
 
             foreach (var relevant in relevants)
             {
-                var feature = GetFeature(
-                    way: relevant,
-                    links: relevant.Links);
+                var feature = new Feature(
+                    geometry: relevant.Geometry,
+                    attributes: relevant.Feature.Attributes);
 
                 featureCollection.Add(feature);
 
