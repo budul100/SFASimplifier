@@ -194,7 +194,7 @@ namespace SFASimplifier.Factories
         {
             var coordinates = GetCoordinates(geometries).ToArray();
 
-            var mergeds = coordinates.GetCoordinates(
+            var mergeds = coordinates.GetMerged(
                 from: from,
                 to: to).ToArray();
 
@@ -494,9 +494,12 @@ namespace SFASimplifier.Factories
 
             foreach (var link in Links)
             {
-                var coordinates = link.Coordinates.GetCoordinates(
+                var mergeds = link.Coordinates.GetMerged(
                     from: link.From,
                     to: link.To).ToArray();
+
+                var coordinates = mergeds
+                    .WithoutAcutes(angleMin).ToArray();
 
                 link.Geometry = geometryFactory.CreateLineString(coordinates);
 

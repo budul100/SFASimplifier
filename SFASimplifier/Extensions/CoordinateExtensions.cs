@@ -20,7 +20,7 @@ namespace SFASimplifier.Extensions
 
         #region Public Methods
 
-        public static IEnumerable<Coordinate> GetCoordinates(this IEnumerable<Coordinate> coordinates,
+        public static IEnumerable<Coordinate> GetMerged(this IEnumerable<Coordinate> coordinates,
             Models.Location from, Models.Location to)
         {
             var fromIsFirst = from.Centroid.Coordinate.GetLength(coordinates.First()) <
