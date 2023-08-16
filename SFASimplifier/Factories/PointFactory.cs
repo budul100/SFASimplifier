@@ -32,15 +32,13 @@ namespace SFASimplifier.Factories
 
         #region Public Methods
 
-        public Models.Point Get(Coordinate coordinate, Coordinate neighbour)
+        public Models.Point Get(Coordinate coordinate)
         {
             var geometry = geometryFactory.CreatePoint(
                 coordinate: coordinate);
 
             var result = GetPoint(
                 geometry: geometry);
-
-            result.Neighbour = neighbour;
 
             return result;
         }
@@ -73,12 +71,10 @@ namespace SFASimplifier.Factories
                 foreach (var geometry in way.Geometries)
                 {
                     Get(
-                        coordinate: geometry.Coordinates[0],
-                        neighbour: geometry.Coordinates[1]);
+                        coordinate: geometry.Coordinates[0]);
 
                     Get(
-                        coordinate: geometry.Coordinates[^1],
-                        neighbour: geometry.Coordinates[^2]);
+                        coordinate: geometry.Coordinates[^1]);
                 }
 
                 infoPackage.NextStep();

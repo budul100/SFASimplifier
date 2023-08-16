@@ -20,27 +20,6 @@ namespace SFASimplifier.Extensions
 
         #region Public Methods
 
-        public static IEnumerable<Coordinate> GetMerged(this IEnumerable<Coordinate> coordinates,
-            Models.Location from, Models.Location to)
-        {
-            var fromIsFirst = from.Centroid.Coordinate.GetLength(coordinates.First()) <
-                to.Centroid.Coordinate.GetLength(coordinates.First());
-
-            yield return from.Centroid.Coordinate;
-
-            if (!fromIsFirst)
-            {
-                coordinates = coordinates.Reverse().ToArray();
-            }
-
-            foreach (var mergedCoordinate in coordinates)
-            {
-                yield return mergedCoordinate;
-            }
-
-            yield return to.Centroid.Coordinate;
-        }
-
         public static double GetLength(this IEnumerable<Coordinate> coordinates)
         {
             var result = 0.0;
@@ -70,6 +49,27 @@ namespace SFASimplifier.Extensions
                 y: rightY);
 
             return leftCoordinate.Distance(rightCoordinate);
+        }
+
+        public static IEnumerable<Coordinate> GetMerged(this IEnumerable<Coordinate> coordinates,
+                          Models.Location from, Models.Location to)
+        {
+            var fromIsFirst = from.Centroid.Coordinate.GetLength(coordinates.First()) <
+                to.Centroid.Coordinate.GetLength(coordinates.First());
+
+            yield return from.Centroid.Coordinate;
+
+            if (!fromIsFirst)
+            {
+                coordinates = coordinates.Reverse().ToArray();
+            }
+
+            foreach (var mergedCoordinate in coordinates)
+            {
+                yield return mergedCoordinate;
+            }
+
+            yield return to.Centroid.Coordinate;
         }
 
         public static bool IsAcuteAngle(this Coordinate via, Coordinate before, Coordinate after,

@@ -211,11 +211,12 @@ namespace SFASimplifier.Factories
 
             var pointGroups = pointFactory.Points
                 .Where(p => isInBuffer(p.Geometry))
-                .GroupBy(p => p.Feature.GetAttribute(keyAttributes) ?? p.GetHashCode().ToString()).ToArray();
+                .GroupBy(p => p.Feature.GetAttribute(keyAttributes)
+                    ?? p.GetHashCode().ToString()).ToArray();
 
             foreach (var pointGroup in pointGroups)
             {
-                var nodes = geometry.FilterNodes(
+                var nodes = geometry.GetNodes(
                     points: pointGroup,
                     distanceNodeToLine: distanceToCapture).ToArray();
 
@@ -229,11 +230,11 @@ namespace SFASimplifier.Factories
                     key: key,
                     points: points);
 
-                foreach (var relevant in nodes)
+                foreach (var node in nodes)
                 {
-                    relevant.Location = result;
+                    node.Location = result;
 
-                    yield return relevant;
+                    yield return node;
                 }
             }
         }

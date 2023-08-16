@@ -54,11 +54,10 @@ namespace SFASimplifier.Factories
             return result;
         }
 
-        public Models.Location Get(Coordinate coordinate, Coordinate neighbour)
+        public Models.Location Get(Coordinate coordinate)
         {
             var point = pointFactory.Get(
-                coordinate: coordinate,
-                neighbour: neighbour);
+                coordinate: coordinate);
 
             var points = new Models.Point[] { point };
 
@@ -187,10 +186,14 @@ namespace SFASimplifier.Factories
                 var relevants = locations
                     .Where(l => !l.IsStation() || key.IsEmpty() || l.Key.IsEmpty());
 
-                result = points?.Any() != true
-                    ? relevants.FirstOrDefault()
-                    : relevants.Where(l => l.Points.GetDistance(points) < maxDistanceAnonymous)
-                        .OrderBy(l => l.Points.GetDistance(points)).FirstOrDefault();
+                if (points?.Any() == true)
+                {
+                    relevants = relevants
+                        .Where(l => l.Points.GetDistance(points) < maxDistanceAnonymous)
+                        .OrderBy(l => l.Points.GetDistance(points));
+                }
+
+                result = relevants.FirstOrDefault();
             }
 
             if (result == default)
@@ -200,8 +203,7 @@ namespace SFASimplifier.Factories
                 locations.Add(result);
             }
 
-            if (!key.IsEmpty()
-                && result.Key.IsEmpty())
+            if (result.Key.IsEmpty())
             {
                 result.Key = key;
             }

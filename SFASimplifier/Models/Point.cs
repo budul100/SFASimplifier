@@ -11,8 +11,6 @@ namespace SFASimplifier.Models
 
         public Geometry Geometry { get; set; }
 
-        public Coordinate Neighbour { get; set; }
-
         #endregion Public Properties
     }
 }

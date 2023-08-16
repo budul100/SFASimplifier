@@ -11,35 +11,7 @@ namespace SFASimplifier.Extensions
 {
     internal static class GeometryExtensions
     {
-        #region Private Fields
-
-        private const int LengthDigits = 4;
-
-        #endregion Private Fields
-
         #region Public Methods
-
-        public static IEnumerable<Node> FilterNodes(this Geometry geometry, IEnumerable<Models.Point> points,
-            double distanceNodeToLine)
-        {
-            foreach (var point in points)
-            {
-                var coordinate = geometry.GetNearest(point.Geometry);
-                var position = geometry.GetPosition(coordinate);
-
-                if (point.IsStation() || point.Geometry.Coordinate.GetLength(coordinate) <= distanceNodeToLine)
-                {
-                    var result = new Node
-                    {
-                        Coordinate = coordinate,
-                        Point = point,
-                        Position = position,
-                    };
-
-                    yield return result;
-                }
-            }
-        }
 
         public static IEnumerable<Coordinate> GetCoordinatesBefore(this Geometry geometry, Coordinate coordinate)
         {
@@ -98,19 +70,38 @@ namespace SFASimplifier.Extensions
             return result;
         }
 
+        public static IEnumerable<Node> GetNodes(this Geometry geometry, IEnumerable<Models.Point> points,
+            double distanceNodeToLine)
+        {
+            foreach (var point in points)
+            {
+                var coordinate = geometry.GetNearest(point.Geometry);
+
+                if (point.IsStation() || point.Geometry.Coordinate.GetLength(coordinate) <= distanceNodeToLine)
+                {
+                    var position = geometry.GetPosition(coordinate);
+
+                    var result = new Node
+                    {
+                        Coordinate = coordinate,
+                        Point = point,
+                        Position = position,
+                    };
+
+                    yield return result;
+                }
+            }
+        }
+
         public static double GetPosition(this Geometry geometry, Coordinate coordinate)
         {
             var loc = LocationIndexOfPoint.IndexOf(
                 linearGeom: geometry,
                 inputPt: coordinate);
 
-            var length = LengthLocationMap.GetLength(
+            var result = LengthLocationMap.GetLength(
                 linearGeom: geometry,
                 loc: loc);
-
-            var result = Math.Round(
-                value: length,
-                digits: LengthDigits);
 
             return result;
         }

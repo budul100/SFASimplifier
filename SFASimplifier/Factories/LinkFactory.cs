@@ -390,8 +390,7 @@ namespace SFASimplifier.Factories
                             if (toLocation == default)
                             {
                                 toLocation = locationFactory.Get(
-                                    coordinate: mergedCoordinates[^1],
-                                    neighbour: mergedCoordinates[^2]);
+                                    coordinate: mergedCoordinates[^1]);
                             }
 
                             mergedCoordinates.Add(toLocation.Centroid.Coordinate);
