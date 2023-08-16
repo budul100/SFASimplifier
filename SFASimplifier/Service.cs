@@ -119,7 +119,7 @@ namespace SFASimplifier
         {
             using var infoPackage = parentPackage.GetPackage(
                 steps: 5,
-                status: "Determine connections.",
+                status: "Determine links.",
                 weight: StatusWeightDeterminingConnections);
 
             segmentFactory.Tidy(

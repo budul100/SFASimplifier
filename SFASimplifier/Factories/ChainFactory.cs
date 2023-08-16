@@ -88,8 +88,8 @@ namespace SFASimplifier.Factories
         private void AddEndeds(IEnumerable<Segment> segments, IPackage parentPackage)
         {
             var relevants = segments
-                .Where(s => !s.From.Location.IsBorder
-                    && !s.To.Location.IsBorder
+                .Where(s => s.From.Location.IsStation()
+                    && s.To.Location.IsStation()
                     && !locationFactory.IsSimilar(
                         from: s.From.Location,
                         to: s.To.Location)).ToArray();
@@ -113,8 +113,8 @@ namespace SFASimplifier.Factories
         private void AddOpens(IEnumerable<Segment> segments, IPackage parentPackage)
         {
             var relevants = segments
-                .Where(s => !s.From.Location.IsBorder
-                    && s.To.Location.IsBorder)
+                .Where(s => s.From.Location.IsStation()
+                    && !s.To.Location.IsStation())
                 .OrderBy(s => s.From.Location.Key)
                 .ThenBy(s => s.Geometry.Length).ToArray();
 
@@ -123,7 +123,7 @@ namespace SFASimplifier.Factories
                 status: "Determine segment chains with borders on first end.");
 
             var nexts = segments
-                .Where(s => s.From.Location.IsBorder)
+                .Where(s => !s.From.Location.IsStation())
                 .GroupBy(s => s.From.Location)
                 .ToDictionary(
                     keySelector: g => g.Key,
@@ -164,7 +164,7 @@ namespace SFASimplifier.Factories
 
                     covereds.UnionWith(result.Segments);
 
-                    if (result.To.Location.IsBorder)
+                    if (!result.To.Location.IsStation())
                     {
                         FindChain(
                             chain: result,
@@ -228,14 +228,14 @@ namespace SFASimplifier.Factories
             }
             else
             {
-                var beforeCoordinate = chain.Geometry.GetNearest(chain.To.Location.Geometry);
+                var beforeCoordinate = chain.Geometry.GetNearest(chain.To.Location.Centroid);
                 var beforePosition = chain.Geometry.GetPosition(beforeCoordinate);
 
                 var befores = chain.Geometry.Coordinates
                     .Where(c => chain.Geometry.GetPosition(c) < beforePosition)
                     .TakeLast(2).ToArray();
 
-                var afterCoordinate = segment.Geometry.GetNearest(chain.To.Location.Geometry);
+                var afterCoordinate = segment.Geometry.GetNearest(chain.To.Location.Centroid);
                 var afterPosition = segment.Geometry.GetPosition(afterCoordinate);
 
                 var afters = segment.Geometry.Coordinates

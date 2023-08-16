@@ -60,7 +60,7 @@ namespace SFASimplifier.Factories
             {
                 var nodes = GetNodes(geometryGroup.Key)
                     .GroupBy(n => n.Position)
-                    .Select(g => g.OrderByDescending(n => !n.Location.IsBorder).First())
+                    .Select(g => g.OrderByDescending(n => n.Location.IsStation()).First())
                     .OrderBy(n => n.Position).ToArray();
 
                 if (nodes.Distinct().Count() > 1)
@@ -94,8 +94,8 @@ namespace SFASimplifier.Factories
 
             foreach (var locationGroup in locationGroups)
             {
-                var relevants = locationGroup.Any(l => !l.IsBorder)
-                    ? locationGroup.Where(l => !l.IsBorder)
+                var relevants = locationGroup.Any(n => n.Location.IsStation())
+                    ? locationGroup.Where(n => n.Location.IsStation())
                     : locationGroup;
 
                 var coordinates = relevants
@@ -152,7 +152,7 @@ namespace SFASimplifier.Factories
                 var nodeTos = nodes
                     .Where(n => n.Position >= positionFrom
                         && n.Position <= positionTo)
-                    .OrderByDescending(n => n.IsBorder)
+                    .OrderByDescending(n => !n.Location.IsStation())
                     .ThenBy(n => n.Position).ToArray();
 
                 foreach (var nodeTo in nodeTos)
@@ -211,25 +211,22 @@ namespace SFASimplifier.Factories
 
             var pointGroups = pointFactory.Points
                 .Where(p => isInBuffer(p.Geometry))
-                .GroupBy(p => p.GetAttribute(keyAttributes) ?? p.GetHashCode().ToString()).ToArray();
+                .GroupBy(p => p.Feature.GetAttribute(keyAttributes) ?? p.GetHashCode().ToString()).ToArray();
 
             foreach (var pointGroup in pointGroups)
             {
-                var key = pointGroup.GetPrimaryAttribute(keyAttributes);
-
                 var nodes = geometry.FilterNodes(
                     points: pointGroup,
-                    keyAttributes: keyAttributes,
                     distanceNodeToLine: distanceToCapture).ToArray();
-
-                var isBorder = nodes.All(p => p.IsBorder);
 
                 var points = nodes
                     .Select(n => n.Point).ToArray();
 
+                var key = pointGroup.GetFeatures()
+                    .GetPrimaryAttribute(keyAttributes);
+
                 var result = locationFactory.Get(
                     key: key,
-                    isBorder: isBorder,
                     points: points);
 
                 foreach (var relevant in nodes)

@@ -11,7 +11,7 @@ namespace SFASimplifier.Factories
         #region Private Fields
 
         private readonly GeometryFactory geometryFactory;
-        private readonly Dictionary<Geometry, Feature> points = new();
+        private readonly Dictionary<Geometry, Models.Point> points = new();
 
         #endregion Private Fields
 
@@ -26,16 +26,21 @@ namespace SFASimplifier.Factories
 
         #region Public Properties
 
-        public IEnumerable<Feature> Points => points.Values;
+        public IEnumerable<Models.Point> Points => points.Values;
 
         #endregion Public Properties
 
         #region Public Methods
 
-        public Feature Get(Coordinate coordinate)
+        public Models.Point Get(Coordinate coordinate, Coordinate neighbour)
         {
-            var geometry = geometryFactory.CreatePoint(coordinate);
-            var result = GetPoint(geometry);
+            var geometry = geometryFactory.CreatePoint(
+                coordinate: coordinate);
+
+            var result = GetPoint(
+                geometry: geometry);
+
+            result.Neighbour = neighbour;
 
             return result;
         }
@@ -48,9 +53,10 @@ namespace SFASimplifier.Factories
 
             foreach (var feature in features)
             {
-                AddPoint(
-                    geometry: feature.Geometry,
-                    feature: feature);
+                var result = GetPoint(
+                    geometry: feature.Geometry);
+
+                result.Feature = feature;
 
                 infoPackage.NextStep();
             }
@@ -64,8 +70,16 @@ namespace SFASimplifier.Factories
 
             foreach (var way in ways)
             {
-                AddBorders(
-                    way: way);
+                foreach (var geometry in way.Geometries)
+                {
+                    Get(
+                        coordinate: geometry.Coordinates[0],
+                        neighbour: geometry.Coordinates[1]);
+
+                    Get(
+                        coordinate: geometry.Coordinates[^1],
+                        neighbour: geometry.Coordinates[^2]);
+                }
 
                 infoPackage.NextStep();
             }
@@ -75,38 +89,18 @@ namespace SFASimplifier.Factories
 
         #region Private Methods
 
-        private void AddBorders(Way way)
-        {
-            foreach (var geometry in way.Geometries)
-            {
-                Get(geometry.Coordinates[0]);
-
-                Get(geometry.Coordinates[^1]);
-            }
-        }
-
-        private void AddPoint(Geometry geometry, Feature feature)
+        private Models.Point GetPoint(Geometry geometry)
         {
             if (!points.ContainsKey(geometry))
             {
-                points.Add(
-                    key: geometry,
-                    value: feature);
-            }
-        }
-
-        private Feature GetPoint(Geometry geometry)
-        {
-            if (!points.ContainsKey(geometry))
-            {
-                var feature = new Feature
+                var result = new Models.Point()
                 {
-                    Geometry = geometry
+                    Geometry = geometry,
                 };
 
                 points.Add(
                     key: geometry,
-                    value: feature);
+                    value: result);
             }
 
             return points[geometry];

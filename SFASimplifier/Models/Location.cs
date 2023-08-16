@@ -1,5 +1,4 @@
-﻿using NetTopologySuite.Features;
-using NetTopologySuite.Geometries;
+﻿using NetTopologySuite.Geometries;
 using System.Collections.Generic;
 
 namespace SFASimplifier.Models
@@ -10,15 +9,11 @@ namespace SFASimplifier.Models
 
         public Geometry Centroid { get; set; }
 
-        public HashSet<Feature> Features { get; } = new();
-
-        public Geometry Geometry { get; set; }
-
-        public bool IsBorder { get; set; }
-
         public string Key { get; set; }
 
         public Location Main { get; set; }
+
+        public HashSet<Point> Points { get; } = new();
 
         #endregion Public Properties
     }

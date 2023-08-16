@@ -1,5 +1,4 @@
 ﻿using FuzzySharp;
-using NetTopologySuite.Features;
 using NetTopologySuite.Geometries;
 using ProgressWatcher.Interfaces;
 using SFASimplifier.Extensions;
@@ -46,24 +45,25 @@ namespace SFASimplifier.Factories
 
         #region Public Methods
 
-        public Models.Location Get(string key, bool isBorder, IEnumerable<Feature> points)
+        public Models.Location Get(string key, IEnumerable<Models.Point> points)
         {
             var result = GetLocation(
-                key: key,
-                isBorder: isBorder,
-                points: points);
+                points: points,
+                key: key);
 
             return result;
         }
 
-        public Models.Location Get(Coordinate coordinate)
+        public Models.Location Get(Coordinate coordinate, Coordinate neighbour)
         {
-            var point = pointFactory.Get(coordinate);
+            var point = pointFactory.Get(
+                coordinate: coordinate,
+                neighbour: neighbour);
+
+            var points = new Models.Point[] { point };
 
             var result = GetLocation(
-                key: default,
-                isBorder: false,
-                points: new Feature[] { point });
+                points: points);
 
             var coordinates = new HashSet<Coordinate> { coordinate };
 
@@ -84,7 +84,7 @@ namespace SFASimplifier.Factories
             var result = from == to;
 
             if (!result
-                && !(from.IsBorder || to.IsBorder)
+                && (from.IsStation() || to.IsStation())
                 && !from.Key.IsEmpty()
                 && !to.Key.IsEmpty()
                 && from.Key == to.Key)
@@ -111,24 +111,21 @@ namespace SFASimplifier.Factories
         {
             if (coordinates.Count() == 1)
             {
-                location.Geometry = geometryFactory.CreatePoint(
+                location.Centroid = geometryFactory.CreatePoint(
                     coordinate: coordinates.Single());
-                location.Centroid = location.Geometry;
             }
             else if (coordinates.Count() == 2)
             {
-                location.Geometry = geometryFactory.CreateLineString(
-                    coordinates: coordinates.ToArray());
-                location.Centroid = location.Geometry.Boundary.Centroid;
+                location.Centroid = geometryFactory.CreateLineString(
+                    coordinates: coordinates.ToArray()).Boundary.Centroid;
             }
             else
             {
                 var ring = coordinates.ToList();
                 ring.Add(coordinates.First());
 
-                location.Geometry = geometryFactory.CreatePolygon(
-                    coordinates: ring.ToArray());
-                location.Centroid = location.Geometry.Boundary.Centroid;
+                location.Centroid = geometryFactory.CreatePolygon(
+                    coordinates: ring.ToArray()).Boundary.Centroid;
             }
         }
 
@@ -140,32 +137,23 @@ namespace SFASimplifier.Factories
 
             foreach (var area in areas)
             {
-                var key = area
-                    .OrderByDescending(l => l.Features.Count).First().Key;
-                var isBorder = area
-                    .All(l => l.IsBorder);
+                var main = area
+                    .OrderByDescending(l => l.Points.Count).First();
 
-                var result = new Models.Location
-                {
-                    Key = key,
-                    IsBorder = isBorder,
-                };
-
-                result.Features.UnionWith(area.SelectMany(l => l.Features));
+                main.Points
+                    .UnionWith(area.SelectMany(l => l.Points));
 
                 var coordinates = area
-                    .SelectMany(l => l.Geometry.Coordinates)
+                    .SelectMany(l => l.Centroid.Coordinates)
                     .Distinct().ToArray();
 
                 Set(
-                    location: result,
+                    location: main,
                     coordinates: coordinates);
-
-                locations.Add(result);
 
                 foreach (var location in area)
                 {
-                    location.Main = result;
+                    location.Main = main;
                 }
             }
         }
@@ -174,7 +162,7 @@ namespace SFASimplifier.Factories
 
         #region Private Methods
 
-        private Models.Location GetLocation(string key, bool isBorder, IEnumerable<Feature> points)
+        private Models.Location GetLocation(IEnumerable<Models.Point> points, string key = default)
         {
             var result = default(Models.Location);
 
@@ -184,29 +172,30 @@ namespace SFASimplifier.Factories
                     .Where(l => !l.Key.IsEmpty()
                         && Fuzz.Ratio(key, l.Key) >= fuzzyScore);
 
-                result = points?.Any() != true
-                    ? relevants.FirstOrDefault()
-                    : relevants.Where(l => l.Features.GetDistance(points) < maxDistanceNamed)
-                        .OrderBy(l => l.Features.GetDistance(points)).FirstOrDefault();
+                if (points?.Any() == true)
+                {
+                    relevants = relevants
+                        .Where(l => l.Points.GetDistance(points) < maxDistanceNamed)
+                        .OrderBy(l => l.Points.GetDistance(points));
+                }
+
+                result = relevants.FirstOrDefault();
             }
 
             if (result == default)
             {
                 var relevants = locations
-                    .Where(l => isBorder || key.IsEmpty() || l.Key.IsEmpty());
+                    .Where(l => !l.IsStation() || key.IsEmpty() || l.Key.IsEmpty());
 
                 result = points?.Any() != true
                     ? relevants.FirstOrDefault()
-                    : relevants.Where(l => l.Features.GetDistance(points) < maxDistanceAnonymous)
-                        .OrderBy(l => l.Features.GetDistance(points)).FirstOrDefault();
+                    : relevants.Where(l => l.Points.GetDistance(points) < maxDistanceAnonymous)
+                        .OrderBy(l => l.Points.GetDistance(points)).FirstOrDefault();
             }
 
             if (result == default)
             {
-                result = new Models.Location
-                {
-                    IsBorder = isBorder,
-                };
+                result = new Models.Location();
 
                 locations.Add(result);
             }
@@ -215,16 +204,11 @@ namespace SFASimplifier.Factories
                 && result.Key.IsEmpty())
             {
                 result.Key = key;
-                result.IsBorder = false;
-            }
-            else if (result.Features.GetDistance(points) > 0)
-            {
-                result.IsBorder = false;
             }
 
             if (points?.Any() == true)
             {
-                result.Features.UnionWith(points);
+                result.Points.UnionWith(points);
             }
 
             return result;

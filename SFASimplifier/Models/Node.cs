@@ -1,5 +1,4 @@
-﻿using NetTopologySuite.Features;
-using NetTopologySuite.Geometries;
+﻿using NetTopologySuite.Geometries;
 
 namespace SFASimplifier.Models
 {
@@ -9,11 +8,9 @@ namespace SFASimplifier.Models
 
         public Coordinate Coordinate { get; set; }
 
-        public bool IsBorder { get; set; }
-
         public Location Location { get; set; }
 
-        public Feature Point { get; set; }
+        public Point Point { get; set; }
 
         public double Position { get; set; }
 

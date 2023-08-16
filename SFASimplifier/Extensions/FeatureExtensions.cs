@@ -30,7 +30,8 @@ namespace SFASimplifier.Extensions
         {
             var result = default(string);
 
-            if (!key.IsEmpty())
+            if (feature != default
+                && !key.IsEmpty())
             {
                 result = feature.Attributes?
                     .GetOptionalValue(key)?.ToString();
@@ -92,19 +93,6 @@ namespace SFASimplifier.Extensions
             }
 
             var result = new AttributesTable(attributes);
-
-            return result;
-        }
-
-        public static double GetDistance(this IEnumerable<Feature> givens, IEnumerable<Feature> others)
-        {
-            var result = 0.0;
-
-            if ((givens?.Any() == true)
-                && (others?.Any() == true))
-            {
-                result = givens.Min(g => others.Min(o => g.Geometry.Coordinate.GetLength(o.Geometry.Coordinate)));
-            }
 
             return result;
         }

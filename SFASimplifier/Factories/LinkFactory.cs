@@ -383,9 +383,16 @@ namespace SFASimplifier.Factories
                         }
                         else
                         {
-                            var toLocation = baseCoordinate != baseCoordinates.Last() || baseLink.To == default
-                                ? locationFactory.Get(mergedCoordinates.Last())
-                                : baseLink.To;
+                            var toLocation = baseCoordinate.Equals(baseCoordinates.Last())
+                                ? baseLink.To
+                                : default;
+
+                            if (toLocation == default)
+                            {
+                                toLocation = locationFactory.Get(
+                                    coordinate: mergedCoordinates[^1],
+                                    neighbour: mergedCoordinates[^2]);
+                            }
 
                             mergedCoordinates.Add(toLocation.Centroid.Coordinate);
 
