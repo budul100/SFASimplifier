@@ -96,7 +96,7 @@ namespace SFASimplifier.Factories
 
             using var infoPackage = parentPackage.GetPackage(
                 items: relevants,
-                status: "Determine segment chains with borders on both ends.");
+                status: "Determine segment chains with stations on both ends.");
 
             foreach (var relevant in relevants)
             {
@@ -120,7 +120,7 @@ namespace SFASimplifier.Factories
 
             using var infoPackage = parentPackage.GetPackage(
                 items: relevants,
-                status: "Determine segment chains with borders on first end.");
+                status: "Determine segment chains with a station on first end.");
 
             var nexts = segments
                 .Where(s => !s.From.Location.IsStation())
