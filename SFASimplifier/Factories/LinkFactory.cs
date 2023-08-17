@@ -376,9 +376,21 @@ namespace SFASimplifier.Factories
                     {
                         var newLinks = new HashSet<Link>();
 
+                        var toLocation = baseCoordinate.Equals(baseCoordinates.Last())
+                            ? baseLink.To
+                            : default;
+
+                        if (toLocation == default
+                            && mergedCoordinates.Any())
+                        {
+                            toLocation = locationFactory.Get(
+                                coordinate: mergedCoordinates[^1]);
+                        }
+
                         if (!linkGeometries.Any()
                             || mergedCoordinates.Count < 2
-                            || isInDistanceToJunction)
+                            || isInDistanceToJunction
+                            || toLocation == fromLocation)
                         {
                             links.Add(baseLink);
 
@@ -387,53 +399,28 @@ namespace SFASimplifier.Factories
                         }
                         else
                         {
-                            var toLocation = baseCoordinate.Equals(baseCoordinates.Last())
-                                ? baseLink.To
-                                : default;
-
-                            if (toLocation == default)
-                            {
-                                toLocation = locationFactory.Get(
-                                    coordinate: mergedCoordinates[^1]);
-                            }
-
                             mergedCoordinates.Add(toLocation.Centroid.Coordinate);
 
                             var correctedCoordinates = mergedCoordinates
                                 .WithoutAcutes(angleMin).ToArray();
 
-                            foreach (var geometry in linkGeometries)
+                            foreach (var linkGeometry in linkGeometries)
                             {
-                                links.Remove(geometry.Key);
+                                links.Remove(linkGeometry.Key);
 
-                                var restCoordinates = geometry.Value
+                                var restCoordinates = linkGeometry.Value
                                     .GetCoordinatesBehind(toLocation.Centroid.Coordinate)
                                     .WithoutAcutes(angleMin).ToArray();
 
                                 if (restCoordinates.Length > 1)
                                 {
-                                    if (geometry.Key.From == fromLocation)
-                                    {
-                                        var restResult = GetLink(
-                                            coordinates: restCoordinates,
-                                            from: toLocation,
-                                            to: geometry.Key.To,
-                                            ways: geometry.Key.Ways);
+                                    var restResult = GetLink(
+                                        coordinates: restCoordinates,
+                                        from: toLocation,
+                                        to: linkGeometry.Key.To,
+                                        ways: linkGeometry.Key.Ways);
 
-                                        newLinks.Add(restResult);
-                                    }
-                                    else
-                                    {
-                                        var restReverseds = restCoordinates.Reverse().ToArray();
-
-                                        var restResult = GetLink(
-                                            coordinates: restReverseds,
-                                            from: geometry.Key.From,
-                                            to: toLocation,
-                                            ways: geometry.Key.Ways);
-
-                                        newLinks.Add(restResult);
-                                    }
+                                    newLinks.Add(restResult);
                                 }
                             }
 

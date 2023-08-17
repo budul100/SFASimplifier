@@ -12,15 +12,15 @@ namespace SFASimplifier.Models
             longName: "angleminlink",
             HelpText = "The min value of the angle between links in a line. This values creates smooth curves on lines.",
             Required = false,
-            Default = 110)]
+            Default = 130)]
         public double AngleMinLinks { get; set; }
 
         [Option(
             longName: "angleminmerge",
-            HelpText = "The min value of the angle between two geometry segments to be merged into a link or line. " +
-                "This values allows to avoid acute angles on the lines.",
+            HelpText = "The min value of the angle between two geometry segments to be merged into a single line. " +
+                "This values allows to find only merging candidates without acute angles.",
             Required = false,
-            Default = 110)]
+            Default = 100)]
         public double AngleMinMerge { get; set; }
 
         [Option(
