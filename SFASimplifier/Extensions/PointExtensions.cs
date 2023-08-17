@@ -16,7 +16,7 @@ namespace SFASimplifier.Extensions
             if ((givens?.Any() == true)
                 && (others?.Any() == true))
             {
-                result = givens.Min(g => others.Min(o => g.Geometry.Coordinate.GetLength(o.Geometry.Coordinate)));
+                result = givens.Min(g => others.Min(o => g.Geometry.Coordinate.GetDistance(o.Geometry.Coordinate)));
             }
 
             return result;

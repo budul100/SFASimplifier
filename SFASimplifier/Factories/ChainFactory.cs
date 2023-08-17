@@ -44,15 +44,20 @@ namespace SFASimplifier.Factories
         public void Load(IEnumerable<Segment> segments, IPackage parentPackage)
         {
             using var infoPackage = parentPackage.GetPackage(
-                steps: 2,
+                steps: 3,
                 status: "Determine segment chains");
 
             AddEndeds(
                 segments: segments,
                 parentPackage: infoPackage);
 
+            var nexts = GetNexts(
+                segments: segments,
+                parentPackage: infoPackage);
+
             AddOpens(
                 segments: segments,
+                nexts: nexts,
                 parentPackage: infoPackage);
         }
 
@@ -74,7 +79,7 @@ namespace SFASimplifier.Factories
                 {
                     chain.Length = length;
 
-                    chain.ConnectionKey = new ConnectionKey(
+                    chain.Key = new ConnectionKey(
                         from: chain.From.Location,
                         to: chain.To.Location);
 
@@ -110,7 +115,8 @@ namespace SFASimplifier.Factories
             }
         }
 
-        private void AddOpens(IEnumerable<Segment> segments, IPackage parentPackage)
+        private void AddOpens(IEnumerable<Segment> segments, IDictionary<Segment, IEnumerable<Segment>> nexts,
+            IPackage parentPackage)
         {
             var relevants = segments
                 .Where(s => s.From.Location.IsStation()
@@ -122,20 +128,13 @@ namespace SFASimplifier.Factories
                 items: relevants,
                 status: "Determine segment chains with a station on first end.");
 
-            var nexts = segments
-                .Where(s => !s.From.Location.IsStation())
-                .GroupBy(s => s.From.Location)
-                .ToDictionary(
-                    keySelector: g => g.Key,
-                    elementSelector: g => g.Select(s => s).ToArray());
-
             foreach (var relevant in relevants)
             {
                 var chain = GetChain(relevant);
 
                 FindChain(
                     chain: chain,
-                    ways: relevant.Ways.ToHashSet(),
+                    current: relevant,
                     nexts: nexts,
                     covereds: new HashSet<Segment>());
 
@@ -143,17 +142,14 @@ namespace SFASimplifier.Factories
             }
         }
 
-        private void FindChain(Chain chain, HashSet<Way> ways, IDictionary<Models.Location, Segment[]> nexts,
+        private void FindChain(Chain chain, Segment current, IDictionary<Segment, IEnumerable<Segment>> nexts,
             HashSet<Segment> covereds)
         {
-            if (nexts.ContainsKey(chain.To.Location))
+            if (nexts.ContainsKey(current))
             {
-                var relevants = nexts[chain.To.Location]
+                var relevants = nexts[current]
                     .Where(s => !covereds.Contains(s)
-                        && !chain.Locations.Contains(s.To.Location)
-                        && HasValidAngle(
-                            chain: chain,
-                            segment: s))
+                        && !chain.Locations.Contains(s.To.Location))
                     .OrderBy(s => s.Geometry.Length).ToArray();
 
                 foreach (var relevant in relevants)
@@ -168,7 +164,7 @@ namespace SFASimplifier.Factories
                     {
                         FindChain(
                             chain: result,
-                            ways: ways,
+                            current: relevant,
                             nexts: nexts,
                             covereds: covereds);
                     }
@@ -202,9 +198,7 @@ namespace SFASimplifier.Factories
                 var coordinates = new List<Coordinate>();
 
                 coordinates.AddRange(given.Geometry.Coordinates);
-                coordinates.Add(segment.From.Location.Centroid.Coordinate);
                 coordinates.AddRange(segment.Geometry.Coordinates);
-                coordinates.Add(segment.To.Location.Centroid.Coordinate);
 
                 result.Geometry = geometryFactory.CreateLineString(coordinates.ToArray());
             }
@@ -215,38 +209,88 @@ namespace SFASimplifier.Factories
             return result;
         }
 
-        private bool HasValidAngle(Chain chain, Segment segment)
+        private IDictionary<Segment, IEnumerable<Segment>> GetNexts(IEnumerable<Segment> segments, IPackage parentPackage)
         {
-            if (chain.Geometry.Coordinates.Last().Equals2D(segment.Geometry.Coordinates[0]))
+            var relevants = segments
+                .Where(s => !s.To.Location.IsStation())
+                .OrderBy(s => s.From.Location.Key).ToArray();
+
+            using var infoPackage = parentPackage.GetPackage(
+                items: relevants,
+                status: "Determine segment sequences.");
+
+            var result = new Dictionary<Segment, IEnumerable<Segment>>();
+
+            foreach (var relevant in relevants)
             {
-                var result = !chain.Geometry.Coordinates[^1].IsAcuteAngle(
-                    before: chain.Geometry.Coordinates[^2],
-                    after: segment.Geometry.Coordinates[1],
+                var nexts = segments
+                    .Where(s => s.From.Location == relevant.To.Location
+                        && HasValidAngle(
+                            left: relevant,
+                            right: s)).ToArray();
+
+                if (nexts.Any())
+                {
+                    result.Add(
+                        key: relevant,
+                        value: nexts);
+                }
+
+                infoPackage.NextStep();
+            }
+
+            while (true)
+            {
+                var deadEnds = result
+                    .Where(n => !n.Value.Any(s => s.To.Location.IsStation() || result.ContainsKey(s)))
+                    .Select(n => n.Key).ToArray();
+
+                if (!deadEnds.Any())
+                {
+                    break;
+                }
+
+                foreach (var deadEnd in deadEnds)
+                {
+                    result.Remove(deadEnd);
+                }
+            }
+
+            return result;
+        }
+
+        private bool HasValidAngle(Segment left, Segment right)
+        {
+            if (left.Geometry.Coordinates.Last().Equals2D(right.Geometry.Coordinates[0]))
+            {
+                var result = !left.Geometry.Coordinates[^1].IsAcuteAngle(
+                    before: left.Geometry.Coordinates[^2],
+                    after: right.Geometry.Coordinates[1],
                     angleMin: angleMin);
 
                 return result;
             }
             else
             {
-                var beforeCoordinate = chain.Geometry.GetNearest(chain.To.Location.Centroid);
-                var beforePosition = chain.Geometry.GetPosition(beforeCoordinate);
+                var beforeCoordinate = left.Geometry.GetNearest(left.To.Location.Centroid);
+                var beforePosition = left.Geometry.GetPosition(beforeCoordinate);
 
-                var befores = chain.Geometry.Coordinates
-                    .Where(c => chain.Geometry.GetPosition(c) < beforePosition)
+                var befores = left.Geometry.Coordinates
+                    .Where(c => left.Geometry.GetPosition(c) < beforePosition)
                     .TakeLast(2).ToArray();
 
-                var afterCoordinate = segment.Geometry.GetNearest(chain.To.Location.Centroid);
-                var afterPosition = segment.Geometry.GetPosition(afterCoordinate);
+                var afterCoordinate = right.Geometry.GetNearest(left.To.Location.Centroid);
+                var afterPosition = right.Geometry.GetPosition(afterCoordinate);
 
-                var afters = segment.Geometry.Coordinates
-                    .Where(c => segment.Geometry.GetPosition(c) > afterPosition)
+                var afters = right.Geometry.Coordinates
+                    .Where(c => right.Geometry.GetPosition(c) > afterPosition)
                     .Take(2).ToArray();
 
                 if (befores.Length > 1)
                 {
                     var result = !befores[^1].IsAcuteAngle(
                         before: befores[^2],
-                        after: chain.To.Location.Centroid.Coordinate,
+                        after: left.To.Location.Centroid.Coordinate,
                         angleMin: angleMin);
 
                     if (!result)
@@ -258,7 +302,7 @@ namespace SFASimplifier.Factories
                 if (befores.Length > 0
                     && afters.Length > 0)
                 {
-                    var result = !chain.To.Location.Centroid.Coordinate.IsAcuteAngle(
+                    var result = !left.To.Location.Centroid.Coordinate.IsAcuteAngle(
                         before: befores[^1],
                         after: afters[0],
                         angleMin: angleMin);
@@ -272,7 +316,7 @@ namespace SFASimplifier.Factories
                 if (afters.Length > 1)
                 {
                     var result = !afters[0].IsAcuteAngle(
-                        before: chain.To.Location.Centroid.Coordinate,
+                        before: left.To.Location.Centroid.Coordinate,
                         after: afters[1],
                         angleMin: angleMin);
 

@@ -58,23 +58,32 @@ namespace SFASimplifier.Factories
 
             foreach (var geometryGroup in geometryGroups)
             {
-                var nodes = GetNodes(geometryGroup.Key)
+                var isInBuffer = geometryGroup.Key.GetIsInBufferPredicate(
+                    distanceInMeters: distanceToCapture);
+
+                var points = pointFactory.Points
+                    .Where(p => isInBuffer(p.Geometry)).ToArray();
+
+                var nodes = GetNodes(
+                    geometry: geometryGroup.Key,
+                    points: points).ToArray();
+
+                var relevants = nodes
                     .GroupBy(n => n.Position)
                     .Select(g => g.OrderByDescending(n => n.Location.IsStation()).First())
                     .OrderBy(n => n.Position).ToArray();
 
-                if (nodes.Distinct().Count() > 1)
+                if (relevants.Distinct().Count() > 1)
                 {
                     var currentWays = geometryGroup
                         .Select(w => w.Way).ToArray();
 
                     AddSegments(
                         geometry: geometryGroup.Key,
-                        nodes: nodes,
-                        ways: currentWays);
+                        nodes: relevants,
+                        ways: currentWays,
+                        parentPackage: infoPackage);
                 }
-
-                infoPackage.NextStep();
             }
         }
 
@@ -138,12 +147,16 @@ namespace SFASimplifier.Factories
             segments[key].Ways.UnionWith(ways);
         }
 
-        private void AddSegments(Geometry geometry, IEnumerable<Node> nodes, IEnumerable<Way> ways)
+        private void AddSegments(Geometry geometry, IEnumerable<Node> nodes, IEnumerable<Way> ways, IPackage parentPackage)
         {
             var nodeFrom = default(Node);
             var indexFrom = default(int?);
 
             var positionFrom = geometry.GetPosition(geometry.Coordinates[0]);
+
+            using var infoPackage = parentPackage.GetPackage(
+                steps: geometry.Coordinates.Length,
+                status: "Create segments.");
 
             for (var indexTo = 1; indexTo < geometry.Coordinates.Length; indexTo++)
             {
@@ -201,16 +214,14 @@ namespace SFASimplifier.Factories
 
                 indexFrom ??= indexTo;
                 positionFrom = positionTo;
+
+                infoPackage.NextStep();
             }
         }
 
-        private IEnumerable<Node> GetNodes(Geometry geometry)
+        private IEnumerable<Node> GetNodes(Geometry geometry, IEnumerable<Models.Point> points)
         {
-            var isInBuffer = geometry.GetIsInBufferPredicate(
-                distanceInMeters: distanceToCapture);
-
-            var pointGroups = pointFactory.Points
-                .Where(p => isInBuffer(p.Geometry))
+            var pointGroups = points
                 .GroupBy(p => p.Feature.GetAttribute(keyAttributes)
                     ?? p.GetHashCode().ToString()).ToArray();
 
@@ -220,21 +231,24 @@ namespace SFASimplifier.Factories
                     points: pointGroup,
                     distanceNodeToLine: distanceToCapture).ToArray();
 
-                var points = nodes
-                    .Select(n => n.Point).ToArray();
-
-                var key = pointGroup.GetFeatures()
-                    .GetPrimaryAttribute(keyAttributes);
-
-                var result = locationFactory.Get(
-                    key: key,
-                    points: points);
-
-                foreach (var node in nodes)
+                if (nodes.Any())
                 {
-                    node.Location = result;
+                    var relevants = nodes
+                        .Select(n => n.Point).ToArray();
 
-                    yield return node;
+                    var key = pointGroup.GetFeatures()
+                        .GetPrimaryAttribute(keyAttributes);
+
+                    var result = locationFactory.Get(
+                        key: key,
+                        points: relevants);
+
+                    foreach (var node in nodes)
+                    {
+                        node.Location = result;
+
+                        yield return node;
+                    }
                 }
             }
         }

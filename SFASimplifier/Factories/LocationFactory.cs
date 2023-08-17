@@ -165,52 +165,42 @@ namespace SFASimplifier.Factories
         {
             var result = default(Models.Location);
 
-            if (!key.IsEmpty())
+            if (points.Any())
             {
-                var relevants = locations
-                    .Where(l => !l.Key.IsEmpty()
-                        && Fuzz.Ratio(key, l.Key) >= fuzzyScore);
+                if (!key.IsEmpty())
+                {
+                    result = locations
+                        .Where(l => !l.Key.IsEmpty()
+                            && Fuzz.Ratio(key, l.Key) >= fuzzyScore
+                            && l.Points.GetDistance(points) < maxDistanceNamed)
+                        .OrderBy(l => l.Points.GetDistance(points)).FirstOrDefault();
+                }
+
+                if (result == default
+                    && points?.Any() == true)
+                {
+                    result = locations
+                        .Where(l => (key.IsEmpty() || l.Key.IsEmpty())
+                            && l.Points.GetDistance(points) < maxDistanceAnonymous)
+                        .OrderBy(l => l.Points.GetDistance(points)).FirstOrDefault();
+                }
+
+                if (result == default)
+                {
+                    result = new Models.Location();
+
+                    locations.Add(result);
+                }
+
+                if (result.Key.IsEmpty())
+                {
+                    result.Key = key;
+                }
 
                 if (points?.Any() == true)
                 {
-                    relevants = relevants
-                        .Where(l => l.Points.GetDistance(points) < maxDistanceNamed)
-                        .OrderBy(l => l.Points.GetDistance(points));
+                    result.Points.UnionWith(points);
                 }
-
-                result = relevants.FirstOrDefault();
-            }
-
-            if (result == default)
-            {
-                var relevants = locations
-                    .Where(l => !l.IsStation() || key.IsEmpty() || l.Key.IsEmpty());
-
-                if (points?.Any() == true)
-                {
-                    relevants = relevants
-                        .Where(l => l.Points.GetDistance(points) < maxDistanceAnonymous)
-                        .OrderBy(l => l.Points.GetDistance(points));
-                }
-
-                result = relevants.FirstOrDefault();
-            }
-
-            if (result == default)
-            {
-                result = new Models.Location();
-
-                locations.Add(result);
-            }
-
-            if (result.Key.IsEmpty())
-            {
-                result.Key = key;
-            }
-
-            if (points?.Any() == true)
-            {
-                result.Points.UnionWith(points);
             }
 
             return result;

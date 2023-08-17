@@ -8,11 +8,11 @@ namespace SFASimplifier.Models
     {
         #region Public Properties
 
-        public ConnectionKey ConnectionKey { get; set; }
-
         public Node From { get; set; }
 
         public Geometry Geometry { get; set; }
+
+        public ConnectionKey Key { get; set; }
 
         public double Length { get; set; }
 

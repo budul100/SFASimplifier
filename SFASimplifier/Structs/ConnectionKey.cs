@@ -30,9 +30,13 @@ namespace SFASimplifier.Structs
 
         public Location From { get; }
 
-        public string Key => $"{From.Key} -> {To.Key}";
+        public string Name => $"{From.Key} -> {To.Key}";
 
         public Location To { get; }
+
+        #endregion Public Properties
+
+        #region Public Methods
 
         public static bool operator !=(ConnectionKey left, ConnectionKey right)
         {
@@ -62,6 +66,6 @@ namespace SFASimplifier.Structs
             return hash.ToHashCode();
         }
 
-        #endregion Public Properties
+        #endregion Public Methods
     }
 }

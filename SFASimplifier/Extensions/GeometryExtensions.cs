@@ -56,7 +56,7 @@ namespace SFASimplifier.Extensions
 
         public static double GetLength(this Geometry geometry)
         {
-            var result = geometry.Coordinates.GetLength();
+            var result = geometry.Coordinates.GetDistance();
 
             return result;
         }
@@ -77,7 +77,7 @@ namespace SFASimplifier.Extensions
             {
                 var coordinate = geometry.GetNearest(point.Geometry);
 
-                if (point.IsStation() || point.Geometry.Coordinate.GetLength(coordinate) <= distanceNodeToLine)
+                if (point.IsStation() || point.Geometry.Coordinate.GetDistance(coordinate) <= distanceNodeToLine)
                 {
                     var position = geometry.GetPosition(coordinate);
 

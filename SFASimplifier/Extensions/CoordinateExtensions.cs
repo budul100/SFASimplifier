@@ -20,19 +20,19 @@ namespace SFASimplifier.Extensions
 
         #region Public Methods
 
-        public static double GetLength(this IEnumerable<Coordinate> coordinates)
+        public static double GetDistance(this IEnumerable<Coordinate> coordinates)
         {
             var result = 0.0;
 
             for (var index = 0; index < coordinates.Count() - 1; index++)
             {
-                result += coordinates.ElementAt(index).GetLength(coordinates.ElementAt(index + 1));
+                result += coordinates.ElementAt(index).GetDistance(coordinates.ElementAt(index + 1));
             }
 
             return result;
         }
 
-        public static double GetLength(this Coordinate left, Coordinate right)
+        public static double GetDistance(this Coordinate left, Coordinate right)
         {
             var (leftX, leftY) = mathTransform.Transform(
                 x: left.X,
@@ -52,10 +52,10 @@ namespace SFASimplifier.Extensions
         }
 
         public static IEnumerable<Coordinate> GetMerged(this IEnumerable<Coordinate> coordinates,
-                          Models.Location from, Models.Location to)
+            Models.Location from, Models.Location to)
         {
-            var fromIsFirst = from.Centroid.Coordinate.GetLength(coordinates.First()) <
-                to.Centroid.Coordinate.GetLength(coordinates.First());
+            var fromIsFirst = from.Centroid.Coordinate.GetDistance(coordinates.First()) <
+                to.Centroid.Coordinate.GetDistance(coordinates.First());
 
             yield return from.Centroid.Coordinate;
 
