@@ -64,9 +64,9 @@ namespace SFASimplifier.Extensions
                 coordinates = coordinates.Reverse().ToArray();
             }
 
-            foreach (var mergedCoordinate in coordinates)
+            foreach (var coordinate in coordinates)
             {
-                yield return mergedCoordinate;
+                yield return coordinate;
             }
 
             yield return to.Centroid.Coordinate;
@@ -89,14 +89,16 @@ namespace SFASimplifier.Extensions
         public static IEnumerable<Coordinate> WithoutAcutes(this IEnumerable<Coordinate> coordinates,
             double angleMin)
         {
-            var result = coordinates.ToArray()
-                .Reverse().Distinct().ToArray();
+            var result = coordinates
+                .DictinctFollowers().ToArray()
+                .Reverse().ToArray();
 
-            result = result.WithoutAcuteFront(angleMin)
-                .Reverse().Distinct().ToArray();
+            result = result
+                .WithoutAcuteFront(angleMin)
+                .Reverse().ToArray();
 
-            result = result.WithoutAcuteFront(angleMin)
-                .Distinct().ToArray();
+            result = result
+                .WithoutAcuteFront(angleMin).ToArray();
 
             return result;
         }
@@ -105,8 +107,23 @@ namespace SFASimplifier.Extensions
 
         #region Private Methods
 
+        private static IEnumerable<Coordinate> DictinctFollowers(this IEnumerable<Coordinate> coordinates)
+        {
+            var last = default(Coordinate);
+
+            foreach (var coordinate in coordinates)
+            {
+                if (last == default || !coordinate.Equals(last))
+                {
+                    yield return coordinate;
+                }
+
+                last = coordinate;
+            }
+        }
+
         private static IEnumerable<Coordinate> WithoutAcuteFront(this IEnumerable<Coordinate> coordinates,
-            double angleMin)
+                    double angleMin)
         {
             yield return coordinates.First();
 

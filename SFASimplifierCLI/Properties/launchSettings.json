@@ -8,13 +8,17 @@
       "commandName": "Project",
       "commandLineArgs": "-i \"..\\..\\..\\..\\Additionals\\Samples\\Bremen.geojson\" -o \"..\\..\\..\\..\\Additionals\\Samples\\Bremen_.geojson\""
     },
-    "Convert Bremen filtered": {
+    "Convert Bremen (filtered)": {
       "commandName": "Project",
-      "commandLineArgs": "-i \"..\\..\\..\\..\\Additionals\\Samples\\Bremen.geojson\" -o \"..\\..\\..\\..\\Additionals\\Samples\\Bremen_.geojson\" --linefilter \"2200 Wanne-Eickel - Hamburg,1404 Abzw Bremen Gabelung - Sagehorn\""
+      "commandLineArgs": "-i \"..\\..\\..\\..\\Additionals\\Samples\\Bremen.geojson\" -o \"..\\..\\..\\..\\Additionals\\Samples\\Bremen_.geojson\" --lineattrkeyfilter \"2200 Wanne-Eickel - Hamburg,1404 Abzw Bremen Gabelung - Sagehorn\""
     },
     "Convert Hungary + Romania": {
       "commandName": "Project",
       "commandLineArgs": "-i \"..\\..\\..\\..\\Additionals\\Samples\\Hungary.geojson,..\\..\\..\\..\\Additionals\\Samples\\Romania.geojson\", -o \"..\\..\\..\\..\\Additionals\\Samples\\Hungary-Romania_.geojson\""
+    },
+    "Convert Ontario (filtered)": {
+      "commandName": "Project",
+      "commandLineArgs": "-i \"..\\..\\..\\..\\Additionals\\Samples\\Ontario.geojson\" -o \"..\\..\\..\\..\\Additionals\\Samples\\Ontario_.geojson\" --lineattrkeyfilter \"GO Transit Newmarket Subdivision\""
     }
   }
 }

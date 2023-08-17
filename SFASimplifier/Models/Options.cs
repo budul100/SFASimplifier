@@ -9,6 +9,21 @@ namespace SFASimplifier.Models
         #region Public Properties
 
         [Option(
+            longName: "angleminlink",
+            HelpText = "The min value of the angle between links in a line. This values creates smooth curves on lines.",
+            Required = false,
+            Default = 110)]
+        public double AngleMinLinks { get; set; }
+
+        [Option(
+            longName: "angleminmerge",
+            HelpText = "The min value of the angle between two geometry segments to be merged into a link or line. " +
+                "This values allows to avoid acute angles on the lines.",
+            Required = false,
+            Default = 110)]
+        public double AngleMinMerge { get; set; }
+
+        [Option(
             longName: "distlocationsanonymous",
             HelpText = "Maximum distance in meters of two points without a name to be merged into the same location.",
             Required = false,
@@ -97,13 +112,6 @@ namespace SFASimplifier.Models
         public IEnumerable<OgcGeometryType> LineTypes { get; set; }
 
         [Option(
-            longName: "linkanglemin",
-            HelpText = "The min value of the angle between links in a line. This values creates smooth curves on lines.",
-            Required = false,
-            Default = 160)]
-        public double LinksAngleMin { get; set; }
-
-        [Option(
             longName: "linklensplit",
             HelpText = "Percentage of the length distance of a geometry " +
                 "when it should be considered as a new link between two locations. " +
@@ -119,14 +127,6 @@ namespace SFASimplifier.Models
             Required = false,
             Default = 100)]
         public int LocationsFuzzyScore { get; set; }
-
-        [Option(
-            longName: "mergeanglemin",
-            HelpText = "The min value of the angle between two geometry segments to be merged into a link or line. " +
-                "This values allows to avoid acute angles on the lines.",
-            Required = false,
-            Default = 110)]
-        public double MergeAngleMin { get; set; }
 
         [Option(
             shortName: 'o',

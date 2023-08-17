@@ -72,12 +72,12 @@ namespace SFASimplifier
             chainFactory = new ChainFactory(
                 geometryFactory: geometryFactory,
                 locationFactory: locationFactory,
-                angleMin: options.MergeAngleMin);
+                angleMin: options.AngleMinMerge);
 
             linkFactory = new LinkFactory(
                 geometryFactory: geometryFactory,
                 locationFactory: locationFactory,
-                angleMin: options.LinksAngleMin,
+                angleMin: options.AngleMinLinks,
                 lengthSplit: options.LinksLengthSplit,
                 distanceToJunction: options.DistanceToJunction,
                 distanceToMerge: options.DistanceToMerge);
