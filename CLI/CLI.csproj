@@ -10,11 +10,11 @@
 	</PropertyGroup>
 
 	<PropertyGroup>
-		<AssemblyVersion>$(VersionMajor).$(VersionMinor).$(VersionBuild)</AssemblyVersion>
-		<AssemblyName>SFASimplifier</AssemblyName>
 		<VersionMajor>1</VersionMajor>
 		<VersionMinor>0</VersionMinor>
 		<VersionBuild>0</VersionBuild>
+		<AssemblyVersion>$(VersionMajor).$(VersionMinor).$(VersionBuild)</AssemblyVersion>
+		<AssemblyName>SFASimplifier</AssemblyName>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
