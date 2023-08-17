@@ -9,4 +9,7 @@ echo.
 echo Simplify %INPUTFILE%
 echo.
 
-.\SFASimplifierCLI\bin\Debug\net6.0\SFASimplifierCLI.exe -i "%INPUTFILE%" -o "%FEATURESFILE%"
+.\_Publish\SFASimplifier.exe -i "%INPUTFILE%" -o "%FEATURESFILE%"
+
+echo.
+pause
