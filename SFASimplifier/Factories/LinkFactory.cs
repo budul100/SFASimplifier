@@ -294,8 +294,17 @@ namespace SFASimplifier.Factories
             return result;
         }
 
-        private void MergeLinks(Models.Location fromLocation, IEnumerable<Link> relevantLinks)
+        private void MergeLinks(Models.Location fromLocation, IEnumerable<Link> relevantLinks = default)
         {
+            if (relevantLinks == default)
+            {
+                links
+                    .Where(l => l.To == fromLocation).Turn();
+
+                relevantLinks = links
+                    .Where(l => l.From == fromLocation).ToArray();
+            }
+
             var baseLink = relevantLinks
                 .Where(l => l.From == fromLocation)
                 .OrderBy(l => l.Length).FirstOrDefault();
@@ -465,7 +474,7 @@ namespace SFASimplifier.Factories
 
         private void MergeLinks(IPackage parentPackage)
         {
-            var locations = locationFactory.Locations.ToArray();
+            var locations = locationFactory.Locations.ToHashSet();
 
             using var infoPackage = parentPackage.GetPackage(
                 items: locations,
@@ -473,15 +482,19 @@ namespace SFASimplifier.Factories
 
             foreach (var location in locations)
             {
-                links
-                    .Where(l => l.To == location).Turn();
-
-                var relevants = links
-                    .Where(l => l.From == location).ToArray();
+                var currentlocations = locationFactory.Locations.ToHashSet();
 
                 MergeLinks(
-                    fromLocation: location,
-                    relevantLinks: relevants);
+                    fromLocation: location);
+
+                var newLocations = locationFactory.Locations
+                    .Except(currentlocations).ToArray();
+
+                foreach (var newLocation in newLocations)
+                {
+                    MergeLinks(
+                        fromLocation: newLocation);
+                }
 
                 infoPackage.NextStep();
             }
