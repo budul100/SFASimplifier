@@ -47,13 +47,17 @@ namespace SFASimplifier.Simplifier
 
             geometryFactory = new GeometryFactory();
 
+            var bboxEnvelope = options.BBoxFilter.GetEnvelope();
+
             wayFactory = new WayFactory(
                 geometryFactory: geometryFactory,
                 attributesKey: options.LineAttributesKey,
-                lineFilters: options.LineAttributesKeyFilter);
+                lineFilters: options.LineAttributesKeyFilter,
+                bboxEnvelope: bboxEnvelope);
 
             pointFactory = new PointFactory(
-                geometryFactory: geometryFactory);
+                geometryFactory: geometryFactory,
+                bboxEnvelope: bboxEnvelope);
 
             locationFactory = new LocationFactory(
                 geometryFactory: geometryFactory,

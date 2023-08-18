@@ -24,6 +24,14 @@ namespace SFASimplifier.Simplifier.Models
         public double AngleMinMerge { get; set; }
 
         [Option(
+            longName: "bboxfilter",
+            HelpText = "Two coordinates describing a bounding box where the data is filtered by. The values must be given in form " +
+                "x1, y1, x2, y2 respectivly lon1, lat1, lon2, lat2. Bounding boxes can be identified by http://bboxfinder.com for example.",
+            Separator = ',',
+            Required = false)]
+        public IEnumerable<string> BBoxFilter { get; set; }
+
+        [Option(
             longName: "distlocationsanonymous",
             HelpText = "Maximum distance in meters of two points without a name to be merged into the same location.",
             Required = false,

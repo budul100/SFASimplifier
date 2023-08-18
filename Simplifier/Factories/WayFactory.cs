@@ -13,6 +13,7 @@ namespace SFASimplifier.Simplifier.Factories
         #region Private Fields
 
         private readonly IEnumerable<string> attributesKey;
+        private readonly Envelope bboxEnvelope;
         private readonly HashSet<LineString> geometries = new();
         private readonly GeometryFactory geometryFactory;
         private readonly IEnumerable<string> lineFilters;
@@ -23,11 +24,12 @@ namespace SFASimplifier.Simplifier.Factories
         #region Public Constructors
 
         public WayFactory(GeometryFactory geometryFactory, IEnumerable<string> attributesKey,
-            IEnumerable<string> lineFilters)
+            IEnumerable<string> lineFilters, Envelope bboxEnvelope)
         {
             this.geometryFactory = geometryFactory;
             this.attributesKey = attributesKey;
             this.lineFilters = lineFilters;
+            this.bboxEnvelope = bboxEnvelope;
         }
 
         #endregion Public Constructors
@@ -52,7 +54,7 @@ namespace SFASimplifier.Simplifier.Factories
 
             foreach (var relevant in relevants)
             {
-                AddWay(
+                GetWay(
                     line: relevant,
                     parentPackage: infoPackage);
             }
@@ -61,21 +63,6 @@ namespace SFASimplifier.Simplifier.Factories
         #endregion Public Methods
 
         #region Private Methods
-
-        private void AddWay(Feature line, IPackage parentPackage)
-        {
-            var geometries = GetGeometries(
-                line: line,
-                parentPackage: parentPackage).ToArray();
-
-            var way = new Way
-            {
-                Geometries = geometries,
-                Feature = line,
-            };
-
-            ways.Add(way);
-        }
 
         private IEnumerable<Geometry> GetGeometries(Feature line, IPackage parentPackage)
         {
@@ -133,16 +120,42 @@ namespace SFASimplifier.Simplifier.Factories
 
             if (indexTo > indexFrom + 1)
             {
-                var coordinates = allCoordinates[indexFrom..(indexTo + 1)];
-                var geometry = geometryFactory.CreateLineString(coordinates);
+                var coordinates = allCoordinates[indexFrom..(indexTo + 1)]
+                    .Where(c => bboxEnvelope?.Contains(c) != false).ToArray();
 
-                result = geometries.SingleOrDefault(g => g.Equals(geometry));
-
-                if (result == default)
+                if (coordinates?.Length > 1)
                 {
-                    result = geometry;
-                    geometries.Add(geometry);
+                    var geometry = geometryFactory.CreateLineString(coordinates);
+                    result = geometries.SingleOrDefault(g => g.Equals(geometry));
+
+                    if (result == default)
+                    {
+                        result = geometry;
+                        geometries.Add(geometry);
+                    }
                 }
+            }
+
+            return result;
+        }
+
+        private Way GetWay(Feature line, IPackage parentPackage)
+        {
+            var result = default(Way);
+
+            var geometries = GetGeometries(
+                line: line,
+                parentPackage: parentPackage).ToArray();
+
+            if (geometries.Any())
+            {
+                result = new Way
+                {
+                    Geometries = geometries,
+                    Feature = line,
+                };
+
+                ways.Add(result);
             }
 
             return result;

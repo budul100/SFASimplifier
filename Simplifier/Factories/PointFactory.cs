@@ -3,6 +3,7 @@ using NetTopologySuite.Geometries;
 using ProgressWatcher.Interfaces;
 using SFASimplifier.Simplifier.Models;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace SFASimplifier.Simplifier.Factories
 {
@@ -10,6 +11,7 @@ namespace SFASimplifier.Simplifier.Factories
     {
         #region Private Fields
 
+        private readonly Envelope bboxEnvelope;
         private readonly GeometryFactory geometryFactory;
         private readonly Dictionary<Geometry, Models.Point> points = new();
 
@@ -17,9 +19,10 @@ namespace SFASimplifier.Simplifier.Factories
 
         #region Public Constructors
 
-        public PointFactory(GeometryFactory geometryFactory)
+        public PointFactory(GeometryFactory geometryFactory, Envelope bboxEnvelope)
         {
             this.geometryFactory = geometryFactory;
+            this.bboxEnvelope = bboxEnvelope;
         }
 
         #endregion Public Constructors
@@ -45,16 +48,19 @@ namespace SFASimplifier.Simplifier.Factories
 
         public void LoadPoints(IEnumerable<Feature> features, IPackage parentPackage)
         {
+            var relevants = features
+                .Where(f => bboxEnvelope?.Contains(f.Geometry.Coordinate) != false).ToArray();
+
             using var infoPackage = parentPackage.GetPackage(
-                items: features,
+                items: relevants,
                 status: "Load way points.");
 
-            foreach (var feature in features)
+            foreach (var relevant in relevants)
             {
                 var result = GetPoint(
-                    geometry: feature.Geometry);
+                    geometry: relevant.Geometry);
 
-                result.Feature = feature;
+                result.Feature = relevant;
 
                 infoPackage.NextStep();
             }
