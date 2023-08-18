@@ -11,6 +11,12 @@
 /Additionals/Samples/Slovakia_.geojson
 /Additionals/Samples/Turkey_.geojson
 /Additionals/Samples/Ungarn-Komplett_.geojson
+/Additionals/Samples/Stralsund.geojson
+/Additionals/Samples/Stralsund_.geojson
+/Additionals/Samples/Example_.geojson
+/Additionals/Samples/Ontario_.geojson
+/Additionals/Samples/Germany-North.geojson
+
 /_Publish
 
 ## Ignore Visual Studio temporary files, build results, and
@@ -316,7 +322,7 @@ node_modules/
 *.dsw
 *.dsp
 
-# Visual Studio 6 technical files 
+# Visual Studio 6 technical files
 *.ncb
 *.aps
 
@@ -411,7 +417,4 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
-/Additionals/Samples/Stralsund.geojson
-/Additionals/Samples/Stralsund_.geojson
-/Additionals/Samples/Example_.geojson
-/Additionals/Samples/Ontario_.geojson
+
