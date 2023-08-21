@@ -13,10 +13,10 @@ namespace SFASimplifier.Simplifier.Factories
     {
         #region Private Fields
 
-        private readonly int distanceToCapture;
         private readonly GeometryFactory geometryFactory;
         private readonly IEnumerable<string> keyAttributes;
         private readonly LocationFactory locationFactory;
+        private readonly int maxDistanceToCapture;
         private readonly PointFactory pointFactory;
         private readonly Dictionary<int, Segment> segments = new();
 
@@ -25,13 +25,13 @@ namespace SFASimplifier.Simplifier.Factories
         #region Public Constructors
 
         public SegmentFactory(GeometryFactory geometryFactory, PointFactory pointFactory,
-            LocationFactory locationFactory, IEnumerable<string> keyAttributes, int distanceToCapture)
+            LocationFactory locationFactory, IEnumerable<string> keyAttributes, int maxDistanceToCapture)
         {
             this.geometryFactory = geometryFactory;
             this.pointFactory = pointFactory;
             this.locationFactory = locationFactory;
             this.keyAttributes = keyAttributes;
-            this.distanceToCapture = distanceToCapture;
+            this.maxDistanceToCapture = maxDistanceToCapture;
         }
 
         #endregion Public Constructors
@@ -59,7 +59,7 @@ namespace SFASimplifier.Simplifier.Factories
             foreach (var geometryGroup in geometryGroups)
             {
                 var isInBuffer = geometryGroup.Key.GetIsInBufferPredicate(
-                    distanceInMeters: distanceToCapture);
+                    distanceInMeters: maxDistanceToCapture);
 
                 var points = pointFactory.Points
                     .Where(p => isInBuffer(p.Geometry)).ToArray();
@@ -231,23 +231,20 @@ namespace SFASimplifier.Simplifier.Factories
             {
                 var nodes = geometry.GetNodes(
                     points: pointGroup,
-                    distanceNodeToLine: distanceToCapture).ToArray();
+                    maxDistanceToLine: maxDistanceToCapture).ToArray();
 
-                if (nodes.Any())
+                foreach (var node in nodes)
                 {
-                    var relevants = nodes
-                        .Select(n => n.Point).ToArray();
-
                     var key = pointGroup.GetFeatures()
                         .GetPrimaryAttribute(keyAttributes);
 
-                    var result = locationFactory.Get(
+                    var location = locationFactory.Get(
                         key: key,
-                        points: relevants);
+                        point: node.Point);
 
-                    foreach (var node in nodes)
+                    if (location != default)
                     {
-                        node.Location = result;
+                        node.Location = location;
 
                         yield return node;
                     }

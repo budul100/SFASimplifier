@@ -71,13 +71,13 @@ namespace SFASimplifier.Simplifier.Extensions
         }
 
         public static IEnumerable<Node> GetNodes(this Geometry geometry, IEnumerable<Models.Point> points,
-            double distanceNodeToLine)
+            double maxDistanceToLine)
         {
             foreach (var point in points)
             {
                 var coordinate = geometry.GetNearest(point.Geometry);
 
-                if (point.IsStation() || point.Geometry.Coordinate.GetDistance(coordinate) <= distanceNodeToLine)
+                if (point.IsStation() || point.Geometry.Coordinate.GetDistance(coordinate) <= maxDistanceToLine)
                 {
                     var position = geometry.GetPosition(coordinate);
 

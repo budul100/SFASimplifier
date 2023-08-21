@@ -15,7 +15,7 @@ namespace SFASimplifier.Simplifier.Factories
         private readonly HashSet<HashSet<Models.Location>> areas = new();
         private readonly int fuzzyScore;
         private readonly GeometryFactory geometryFactory;
-        private readonly HashSet<Models.Location> locations = new();
+        private readonly Dictionary<Models.Point, Models.Location> locations = new();
         private readonly int maxDistanceAnonymous;
         private readonly int maxDistanceNamed;
         private readonly PointFactory pointFactory;
@@ -38,42 +38,77 @@ namespace SFASimplifier.Simplifier.Factories
 
         #region Public Properties
 
-        public IEnumerable<Models.Location> Locations => locations
+        public IEnumerable<Models.Location> Locations => locations.Values
             .OrderBy(l => l.Key?.ToString()).ToArray();
 
         #endregion Public Properties
 
         #region Public Methods
 
-        public Models.Location Get(string key, IEnumerable<Models.Point> points)
-        {
-            var result = GetLocation(
-                points: points,
-                key: key);
-
-            return result;
-        }
-
         public Models.Location Get(Coordinate coordinate)
         {
             var point = pointFactory.Get(
                 coordinate: coordinate);
 
-            var points = new Models.Point[] { point };
+            var result = Get(
+                point: point);
 
-            var result = GetLocation(
-                points: points);
-
-            var coordinates = new HashSet<Coordinate> { coordinate };
-
-            if (result?.Centroid?.Coordinate != default)
-            {
-                coordinates.Add(result.Centroid.Coordinate);
-            }
+            var coordinates = result.GetCoordinates(
+                coordinate: coordinate);
 
             Set(
                 location: result,
                 coordinates: coordinates);
+
+            return result;
+        }
+
+        public Models.Location Get(Models.Point point, string key = default)
+        {
+            var result = default(Models.Location);
+
+            if (point != default)
+            {
+                if (!locations.ContainsKey(point))
+                {
+                    if (!key.IsEmpty())
+                    {
+                        result = locations.Values
+                            .Where(l => !l.Key.IsEmpty()
+                                && Fuzz.Ratio(key, l.Key) >= fuzzyScore
+                                && point.GetDistance(l.Points) < maxDistanceNamed)
+                            .OrderBy(l => point.GetDistance(l.Points)).FirstOrDefault();
+                    }
+
+                    if (result == default)
+                    {
+                        result = locations.Values
+                            .Where(l => (key.IsEmpty() || l.Key.IsEmpty())
+                                && point.GetDistance(l.Points) < maxDistanceAnonymous)
+                            .OrderBy(l => point.GetDistance(l.Points)).FirstOrDefault();
+                    }
+
+                    if (result == default)
+                    {
+                        result = new Models.Location();
+                    }
+
+                    locations.Add(
+                        key: point,
+                        value: result);
+                }
+                else
+                {
+                    result = locations[point];
+                }
+
+                if (result.Key.IsEmpty())
+                {
+                    result.Key = key;
+                }
+
+                result.Points.Add(point);
+            }
 
             return result;
         }
@@ -158,54 +193,5 @@ namespace SFASimplifier.Simplifier.Factories
         }
 
         #endregion Public Methods
-
-        #region Private Methods
-
-        private Models.Location GetLocation(IEnumerable<Models.Point> points, string key = default)
-        {
-            var result = default(Models.Location);
-
-            if (points.Any())
-            {
-                if (!key.IsEmpty())
-                {
-                    result = locations
-                        .Where(l => !l.Key.IsEmpty()
-                            && Fuzz.Ratio(key, l.Key) >= fuzzyScore
-                            && l.Points.GetDistance(points) < maxDistanceNamed)
-                        .OrderBy(l => l.Points.GetDistance(points)).FirstOrDefault();
-                }
-
-                if (result == default
-                    && points?.Any() == true)
-                {
-                    result = locations
-                        .Where(l => (key.IsEmpty() || l.Key.IsEmpty())
-                            && l.Points.GetDistance(points) < maxDistanceAnonymous)
-                        .OrderBy(l => l.Points.GetDistance(points)).FirstOrDefault();
-                }
-
-                if (result == default)
-                {
-                    result = new Models.Location();
-
-                    locations.Add(result);
-                }
-
-                if (result.Key.IsEmpty())
-                {
-                    result.Key = key;
-                }
-
-                if (points?.Any() == true)
-                {
-                    result.Points.UnionWith(points);
-                }
-            }
-
-            return result;
-        }
-
-        #endregion Private Methods
     }
 }

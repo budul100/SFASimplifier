@@ -71,7 +71,7 @@ namespace SFASimplifier.Simplifier
                 pointFactory: pointFactory,
                 locationFactory: locationFactory,
                 keyAttributes: options.PointAttributesKey,
-                distanceToCapture: options.DistanceToCapture);
+                maxDistanceToCapture: options.DistanceToCapture);
 
             chainFactory = new ChainFactory(
                 geometryFactory: geometryFactory,

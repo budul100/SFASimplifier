@@ -9,14 +9,31 @@ namespace SFASimplifier.Simplifier.Extensions
     {
         #region Public Methods
 
-        public static double GetDistance(this IEnumerable<Point> givens, IEnumerable<Point> others)
+        public static double? GetDistance(this Point given, IEnumerable<Point> others)
         {
-            var result = 0.0;
+            var result = default(double?);
 
-            if ((givens?.Any() == true)
-                && (others?.Any() == true))
+            if ((given != default)
+                && (others?.Any(c => c != default) == true))
             {
-                result = givens.Min(g => others.Min(o => g.Geometry.Coordinate.GetDistance(o.Geometry.Coordinate)));
+                result = others
+                    .Where(c => c != default)
+                    .Min(c => c.Geometry.Coordinate.GetDistance(given.Geometry.Coordinate));
+            }
+
+            return result;
+        }
+
+        public static double? GetDistance(this IEnumerable<Point> givens, IEnumerable<Point> others)
+        {
+            var result = default(double?);
+
+            if ((givens?.Any(c => c != default) == true)
+                && (others?.Any(c => c != default) == true))
+            {
+                result = givens
+                    .Where(c => c != default)
+                    .Min(c => c.GetDistance(others));
             }
 
             return result;

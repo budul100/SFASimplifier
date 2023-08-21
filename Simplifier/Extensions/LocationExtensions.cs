@@ -1,4 +1,6 @@
 ﻿using NetTopologySuite.Features;
+using NetTopologySuite.Geometries;
+using System.Collections.Generic;
 
 namespace SFASimplifier.Simplifier.Extensions
 {
@@ -15,6 +17,19 @@ namespace SFASimplifier.Simplifier.Extensions
                 preventMerging: preventMergingAttributes);
 
             var result = new AttributesTable(table);
+
+            return result;
+        }
+
+        public static IEnumerable<Coordinate> GetCoordinates(this Models.Location location,
+            Coordinate coordinate)
+        {
+            var result = new HashSet<Coordinate> { coordinate };
+
+            if (location.Centroid?.Coordinate != default)
+            {
+                result.Add(location.Centroid.Coordinate);
+            }
 
             return result;
         }
