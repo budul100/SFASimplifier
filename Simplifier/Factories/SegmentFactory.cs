@@ -13,7 +13,7 @@ namespace SFASimplifier.Simplifier.Factories
     {
         #region Private Fields
 
-        private readonly double distanceToCapture;
+        private readonly int distanceToCapture;
         private readonly GeometryFactory geometryFactory;
         private readonly IEnumerable<string> keyAttributes;
         private readonly LocationFactory locationFactory;
@@ -25,7 +25,7 @@ namespace SFASimplifier.Simplifier.Factories
         #region Public Constructors
 
         public SegmentFactory(GeometryFactory geometryFactory, PointFactory pointFactory,
-            LocationFactory locationFactory, IEnumerable<string> keyAttributes, double distanceToCapture)
+            LocationFactory locationFactory, IEnumerable<string> keyAttributes, int distanceToCapture)
         {
             this.geometryFactory = geometryFactory;
             this.pointFactory = pointFactory;
@@ -127,11 +127,13 @@ namespace SFASimplifier.Simplifier.Factories
         {
             var geometry = geometryFactory.CreateLineString(
                 coordinates: coordinates);
+            var length = geometry.GetLength();
 
             var segment = new Segment
             {
                 From = nodeFrom,
                 Geometry = geometry,
+                Length = length,
                 To = nodeTo,
             };
 

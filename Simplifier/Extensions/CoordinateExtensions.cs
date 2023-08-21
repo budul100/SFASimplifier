@@ -80,7 +80,11 @@ namespace SFASimplifier.Simplifier.Extensions
                 return true;
             }
 
-            var angleRad = AngleUtility.AngleBetween(before, via, after);
+            var angleRad = AngleUtility.AngleBetween(
+                tip1: before,
+                tail: via,
+                tip2: after);
+
             var angleDeg = AngleUtility.ToDegrees(angleRad);
 
             return angleDeg <= angleMin;
@@ -123,7 +127,7 @@ namespace SFASimplifier.Simplifier.Extensions
         }
 
         private static IEnumerable<Coordinate> WithoutAcuteFront(this IEnumerable<Coordinate> coordinates,
-                    double angleMin)
+            double angleMin)
         {
             yield return coordinates.First();
 

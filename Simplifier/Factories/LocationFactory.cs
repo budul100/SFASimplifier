@@ -13,19 +13,19 @@ namespace SFASimplifier.Simplifier.Factories
         #region Private Fields
 
         private readonly HashSet<HashSet<Models.Location>> areas = new();
-        private readonly double fuzzyScore;
+        private readonly int fuzzyScore;
         private readonly GeometryFactory geometryFactory;
         private readonly HashSet<Models.Location> locations = new();
-        private readonly double maxDistanceAnonymous;
-        private readonly double maxDistanceNamed;
+        private readonly int maxDistanceAnonymous;
+        private readonly int maxDistanceNamed;
         private readonly PointFactory pointFactory;
 
         #endregion Private Fields
 
         #region Public Constructors
 
-        public LocationFactory(GeometryFactory geometryFactory, PointFactory pointFactory, double maxDistanceNamed,
-            double maxDistanceAnonymous, double fuzzyScore)
+        public LocationFactory(GeometryFactory geometryFactory, PointFactory pointFactory, int maxDistanceNamed,
+            int maxDistanceAnonymous, int fuzzyScore)
         {
             this.geometryFactory = geometryFactory;
             this.pointFactory = pointFactory;

@@ -19,6 +19,10 @@
     "Convert Ontario (filtered)": {
       "commandName": "Project",
       "commandLineArgs": "-i \"..\\..\\..\\..\\Additionals\\Samples\\Ontario.geojson\" -o \"..\\..\\..\\..\\Additionals\\Samples\\Ontario_.geojson\" --lineattrkeyfilter \"GO Transit Newmarket Subdivision\""
+    },
+    "Convert North (filtered)": {
+      "commandName": "Project",
+      "commandLineArgs": "-i \"..\\..\\..\\..\\Additionals\\Samples\\Germany-North.geojson\" -o \"..\\..\\..\\..\\Additionals\\Samples\\Germany-North_.geojson\" --bboxfilter 9.891815,53.426412,10.072060,53.508162"
     }
   }
 }

@@ -1,18 +1,17 @@
 ﻿using NetTopologySuite.Geometries;
+using SFASimplifier.Simplifier.Structs;
 
 namespace SFASimplifier.Simplifier.Models
 {
-    internal class Node
+    internal abstract class Connection
     {
         #region Public Properties
 
-        public Coordinate Coordinate { get; set; }
+        public Geometry Geometry { get; set; }
 
-        public Location Location { get; set; }
+        public ConnectionKey Key { get; set; }
 
-        public Point Point { get; set; }
-
-        public double Position { get; set; }
+        public double Length { get; set; }
 
         #endregion Public Properties
 
@@ -20,9 +19,7 @@ namespace SFASimplifier.Simplifier.Models
 
         public override string ToString()
         {
-            var result = Location?.ToString()
-                ?? Point.ToString()
-                ?? base.ToString();
+            var result = Key.ToString();
 
             return result;
         }

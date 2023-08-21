@@ -30,8 +30,6 @@ namespace SFASimplifier.Simplifier.Structs
 
         public Location From { get; }
 
-        public string Name => $"{From.Key} -> {To.Key}";
-
         public Location To { get; }
 
         #endregion Public Properties
@@ -64,6 +62,13 @@ namespace SFASimplifier.Simplifier.Structs
             hash.Add(To);
 
             return hash.ToHashCode();
+        }
+
+        public override string ToString()
+        {
+            var result = $"{From} -> {To}";
+
+            return result;
         }
 
         #endregion Public Methods

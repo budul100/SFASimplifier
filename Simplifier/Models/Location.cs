@@ -16,5 +16,18 @@ namespace SFASimplifier.Simplifier.Models
         public HashSet<Point> Points { get; } = new();
 
         #endregion Public Properties
+
+        #region Public Methods
+
+        public override string ToString()
+        {
+            var result = Key
+                ?? Centroid?.Coordinate?.ToString()
+                ?? base.ToString();
+
+            return result;
+        }
+
+        #endregion Public Methods
     }
 }

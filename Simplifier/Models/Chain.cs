@@ -1,20 +1,13 @@
-﻿using NetTopologySuite.Geometries;
-using SFASimplifier.Simplifier.Structs;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
 namespace SFASimplifier.Simplifier.Models
 {
     internal class Chain
+        : Connection
     {
         #region Public Properties
 
         public Node From { get; set; }
-
-        public Geometry Geometry { get; set; }
-
-        public ConnectionKey Key { get; set; }
-
-        public double Length { get; set; }
 
         public List<Location> Locations { get; } = new();
 

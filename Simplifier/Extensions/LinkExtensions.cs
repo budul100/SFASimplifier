@@ -13,7 +13,8 @@ namespace SFASimplifier.Simplifier.Extensions
         {
             foreach (var link in links.ToArray())
             {
-                (link.To, link.From) = (link.From, link.To);
+                (link.From, link.To) = (link.To, link.From);
+
                 link.Coordinates = link.Coordinates.Reverse().ToArray();
             }
         }

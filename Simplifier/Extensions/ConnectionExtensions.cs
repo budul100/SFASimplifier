@@ -4,26 +4,27 @@ using System.Linq;
 
 namespace SFASimplifier.Simplifier.Extensions
 {
-    internal static class ChainExtensions
+    internal static class ConnectionExtensions
     {
         #region Private Fields
 
-        private const int TakeMaxChains = 1000;
+        private const int TakeMax = 1000;
 
         #endregion Private Fields
 
         #region Public Methods
 
-        public static IEnumerable<IEnumerable<Chain>> GetLengthGroups(this IEnumerable<Chain> chains,
-            double lengthSplit)
+        public static IEnumerable<IEnumerable<T>> GetLengthGroups<T>(this IEnumerable<T> chains,
+            int lengthSplit)
+            where T : Connection
         {
             if (chains.Any())
             {
                 var givens = chains
                     .OrderBy(g => g.Length).ToHashSet();
 
-                var result = new HashSet<Chain>();
-                var currentSplit = 1 + lengthSplit;
+                var result = new HashSet<T>();
+                var currentSplit = 1 + ((double)lengthSplit / 100);
                 var minLength = givens.First().Length;
 
                 while (givens.Any())
@@ -38,9 +39,9 @@ namespace SFASimplifier.Simplifier.Extensions
                         if (result.Any())
                         {
                             yield return result
-                                .Take(TakeMaxChains).ToArray();
+                                .Take(TakeMax).ToArray();
 
-                            result = new HashSet<Chain>();
+                            result = new HashSet<T>();
                         }
 
                         minLength = givens.First().Length;
@@ -50,7 +51,7 @@ namespace SFASimplifier.Simplifier.Extensions
                 if (result.Any())
                 {
                     yield return result;
-                    result = new HashSet<Chain>();
+                    result = new HashSet<T>();
                 }
             }
         }

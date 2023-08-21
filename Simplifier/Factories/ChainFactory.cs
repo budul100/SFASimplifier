@@ -13,20 +13,25 @@ namespace SFASimplifier.Simplifier.Factories
     {
         #region Private Fields
 
-        private readonly double angleMin;
+        private readonly int angleMin;
         private readonly Dictionary<(int, double), Chain> chains = new();
         private readonly GeometryFactory geometryFactory;
+        private readonly int lengthSplit;
         private readonly LocationFactory locationFactory;
 
         #endregion Private Fields
 
         #region Public Constructors
 
-        public ChainFactory(GeometryFactory geometryFactory, LocationFactory locationFactory, double angleMin)
+        public ChainFactory(GeometryFactory geometryFactory, LocationFactory locationFactory, int angleMin,
+            int lengthSplit)
         {
             this.geometryFactory = geometryFactory;
             this.locationFactory = locationFactory;
             this.angleMin = angleMin;
+
+            // Chain length split is shorter to avoid missing too much chain options
+            this.lengthSplit = lengthSplit / 2;
         }
 
         #endregion Public Constructors
@@ -73,9 +78,9 @@ namespace SFASimplifier.Simplifier.Factories
             {
                 var hash = chain.Segments.GetSequenceHash();
                 var length = chain.Geometry.GetLength();
-                var key = (hash, length);
+                var chainKey = (hash, length);
 
-                if (!chains.ContainsKey(key))
+                if (!chains.ContainsKey(chainKey))
                 {
                     chain.Length = length;
 
@@ -84,7 +89,7 @@ namespace SFASimplifier.Simplifier.Factories
                         to: chain.To.Location);
 
                     chains.Add(
-                        key: key,
+                        key: chainKey,
                         value: chain);
                 }
             }
@@ -147,30 +152,38 @@ namespace SFASimplifier.Simplifier.Factories
         {
             if (nexts.ContainsKey(current))
             {
-                var relevants = nexts[current]
+                var locationGroups = nexts[current]
                     .Where(s => !covereds.Contains(s)
                         && !chain.Locations.Contains(s.To.Location))
-                    .OrderBy(s => s.Geometry.Length).ToArray();
+                    .GroupBy(s => s.To.Location).ToArray();
 
-                foreach (var relevant in relevants)
+                foreach (var locationGroup in locationGroups)
                 {
-                    var result = GetChain(
-                        segment: relevant,
-                        given: chain);
+                    var lengthGroups = locationGroup.GetLengthGroups(
+                        lengthSplit: lengthSplit).ToArray();
 
-                    covereds.UnionWith(result.Segments);
+                    foreach (var lengthGroup in lengthGroups)
+                    {
+                        var relevant = lengthGroup.First();
 
-                    if (!result.To.Location.IsStation())
-                    {
-                        FindChain(
-                            chain: result,
-                            current: relevant,
-                            nexts: nexts,
-                            covereds: covereds);
-                    }
-                    else
-                    {
-                        AddChain(result);
+                        var result = GetChain(
+                            segment: relevant,
+                            given: chain);
+
+                        covereds.UnionWith(result.Segments);
+
+                        if (!result.To.Location.IsStation())
+                        {
+                            FindChain(
+                                chain: result,
+                                current: relevant,
+                                nexts: nexts,
+                                covereds: covereds);
+                        }
+                        else
+                        {
+                            AddChain(result);
+                        }
                     }
                 }
             }
@@ -290,7 +303,7 @@ namespace SFASimplifier.Simplifier.Factories
                 {
                     var result = !befores[^1].IsAcuteAngle(
                         before: befores[^2],
-                        after: left.To.Location.Centroid.Coordinate,
+                        after: right.Geometry.Coordinates[0],
                         angleMin: angleMin);
 
                     if (!result)
@@ -302,7 +315,17 @@ namespace SFASimplifier.Simplifier.Factories
                 if (befores.Length > 0
                     && afters.Length > 0)
                 {
-                    var result = !left.To.Location.Centroid.Coordinate.IsAcuteAngle(
+                    var result = !left.Geometry.Coordinates[^1].IsAcuteAngle(
+                        before: befores[^1],
+                        after: afters[0],
+                        angleMin: angleMin);
+
+                    if (!result)
+                    {
+                        return false;
+                    }
+
+                    result = !right.Geometry.Coordinates[0].IsAcuteAngle(
                         before: befores[^1],
                         after: afters[0],
                         angleMin: angleMin);
@@ -316,7 +339,7 @@ namespace SFASimplifier.Simplifier.Factories
                 if (afters.Length > 1)
                 {
                     var result = !afters[0].IsAcuteAngle(
-                        before: left.To.Location.Centroid.Coordinate,
+                        before: left.Geometry.Coordinates[^1],
                         after: afters[1],
                         angleMin: angleMin);
 

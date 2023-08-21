@@ -13,7 +13,7 @@ namespace SFASimplifier.Simplifier.Models
             HelpText = "The min value of the angle between links in a line. This values creates smooth curves on lines.",
             Required = false,
             Default = 130)]
-        public double AngleMinLinks { get; set; }
+        public int AngleMinLinks { get; set; }
 
         [Option(
             longName: "angleminmerge",
@@ -21,7 +21,7 @@ namespace SFASimplifier.Simplifier.Models
                 "This values allows to find only merging candidates without acute angles.",
             Required = false,
             Default = 100)]
-        public double AngleMinMerge { get; set; }
+        public int AngleMinMerge { get; set; }
 
         [Option(
             longName: "bboxfilter",
@@ -125,7 +125,7 @@ namespace SFASimplifier.Simplifier.Models
                 "when it should be considered as a new link between two locations. " +
                 "This value allows to create multiple links between stations based on their lengthes.",
             Required = false,
-            Default = 25)]
+            Default = 5)]
         public int LinksLengthSplit { get; set; }
 
         [Option(

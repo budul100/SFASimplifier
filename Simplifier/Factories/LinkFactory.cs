@@ -3,6 +3,7 @@ using NetTopologySuite.Geometries;
 using ProgressWatcher.Interfaces;
 using SFASimplifier.Simplifier.Extensions;
 using SFASimplifier.Simplifier.Models;
+using SFASimplifier.Simplifier.Structs;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,11 +14,11 @@ namespace SFASimplifier.Simplifier.Factories
     {
         #region Private Fields
 
-        private readonly double angleMin;
+        private readonly int angleMin;
         private readonly int distanceToJunction;
         private readonly int distanceToMerge;
         private readonly GeometryFactory geometryFactory;
-        private readonly double lengthSplit;
+        private readonly int lengthSplit;
         private readonly HashSet<Link> links = new();
         private readonly LocationFactory locationFactory;
 
@@ -25,8 +26,8 @@ namespace SFASimplifier.Simplifier.Factories
 
         #region Public Constructors
 
-        public LinkFactory(GeometryFactory geometryFactory, LocationFactory locationFactory, double angleMin,
-            double lengthSplit, int distanceToJunction, int distanceToMerge)
+        public LinkFactory(GeometryFactory geometryFactory, LocationFactory locationFactory, int angleMin,
+            int lengthSplit, int distanceToJunction, int distanceToMerge)
         {
             this.geometryFactory = geometryFactory;
             this.locationFactory = locationFactory;
@@ -87,7 +88,7 @@ namespace SFASimplifier.Simplifier.Factories
                     || c.To.Location.Main == default
                     || c.From.Location.Main != c.To.Location.Main)
                 .GroupBy(c => c.Key)
-                .OrderBy(g => g.Key.Name).ToArray();
+                .OrderBy(g => g.First().ToString()).ToArray();
 
             using var infoPackage = parentPackage.GetPackage(
                 items: chainGroups,
@@ -100,12 +101,13 @@ namespace SFASimplifier.Simplifier.Factories
                 var to = chainGroup.Key.To.Main
                     ?? chainGroup.Key.To;
 
-                var geometryGroups = chainGroup.GetLengthGroups(
-                    lengthSplit: lengthSplit).ToArray();
+                var lengthGroups = chainGroup.GetLengthGroups(
+                    lengthSplit: lengthSplit)
+                    .OrderBy(g => g.First().Length).ToArray();
 
-                foreach (var geometryGroup in geometryGroups)
+                foreach (var lengthGroup in lengthGroups)
                 {
-                    var geometries = geometryGroup
+                    var geometries = lengthGroup
                         .Select(g => g.Geometry).ToArray();
 
                     var coordinates = GetCoordinates(
@@ -113,7 +115,7 @@ namespace SFASimplifier.Simplifier.Factories
                         from: from,
                         to: to).ToArray();
 
-                    var ways = geometryGroup
+                    var ways = lengthGroup
                         .SelectMany(c => c.Segments)
                         .SelectMany(s => s.Ways)
                         .Distinct().ToArray();
@@ -248,13 +250,18 @@ namespace SFASimplifier.Simplifier.Factories
                 coordinates = coordinates.Reverse().ToArray();
             }
 
+            var key = new ConnectionKey(
+                from: from,
+                to: to);
+
             var length = coordinates.GetDistance();
-            var currentSplit = 1 + lengthSplit;
+            var currentSplit = 1 + ((double)lengthSplit / 100);
 
             var result = links
-                .SingleOrDefault(l => l.From == from
-                    && l.To == to
-                    && length <= l.Length * currentSplit);
+                .Where(l => l.Key == key
+                    && length >= l.Length
+                    && length <= l.Length * currentSplit)
+                .OrderBy(l => length - l.Length).FirstOrDefault();
 
             if (result == default)
             {
@@ -262,6 +269,7 @@ namespace SFASimplifier.Simplifier.Factories
                 {
                     Coordinates = coordinates,
                     From = from,
+                    Key = key,
                     Length = length,
                     To = to,
                     Ways = ways,
@@ -294,27 +302,15 @@ namespace SFASimplifier.Simplifier.Factories
             return result;
         }
 
-        private void MergeLinks(Models.Location fromLocation, IEnumerable<Link> relevantLinks = default)
+        private void MergeLinks(Models.Location fromLocation, IEnumerable<Link> relevantLinks)
         {
-            if (relevantLinks == default)
-            {
-                links
-                    .Where(l => l.To == fromLocation).Turn();
-
-                relevantLinks = links
-                    .Where(l => l.From == fromLocation).ToArray();
-            }
-
             var baseLink = relevantLinks
                 .Where(l => l.From == fromLocation)
                 .OrderBy(l => l.Length).FirstOrDefault();
 
             if (baseLink == default || relevantLinks.Count() == 1)
             {
-                foreach (var relevantLink in relevantLinks)
-                {
-                    links.Add(relevantLink);
-                }
+                links.UnionWith(relevantLinks);
             }
             else if (relevantLinks.Count() > 1)
             {
@@ -461,26 +457,41 @@ namespace SFASimplifier.Simplifier.Factories
 
         private void MergeLinks(IPackage parentPackage)
         {
-            var locations = locationFactory.Locations.ToHashSet();
+            var relevantLocations = locationFactory.Locations
+                .Where(l => l.IsStation()).ToArray();
 
             using var infoPackage = parentPackage.GetPackage(
-                items: locations,
+                items: relevantLocations,
                 status: "Merge links.");
 
-            foreach (var location in locations)
+            foreach (var relevantLocation in relevantLocations)
             {
                 var currentlocations = locationFactory.Locations.ToHashSet();
 
+                links
+                    .Where(l => l.To == relevantLocation).Turn();
+
+                var relevantLinks = links
+                    .Where(l => l.From == relevantLocation).ToArray();
+
                 MergeLinks(
-                    fromLocation: location);
+                    fromLocation: relevantLocation,
+                    relevantLinks: relevantLinks);
 
                 var newLocations = locationFactory.Locations
                     .Except(currentlocations).ToArray();
 
                 foreach (var newLocation in newLocations)
                 {
+                    links
+                        .Where(l => l.To == newLocation).Turn();
+
+                    var newLinks = links
+                        .Where(l => l.From == newLocation).ToArray();
+
                     MergeLinks(
-                        fromLocation: newLocation);
+                        fromLocation: newLocation,
+                        relevantLinks: newLinks);
                 }
 
                 infoPackage.NextStep();
