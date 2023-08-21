@@ -13,6 +13,8 @@ pushd .\Additionals\Scripts
 
 call Clean.bat
 
+if not %ERRORLEVEL% == 0 goto End
+
 popd
 
 echo.
@@ -23,9 +25,23 @@ dotnet publish CLI -p:DebugType=None -p:DebugSymbols=false -p:IncludeNativeLibra
 
 rem dotnet publish -r linux-x64 -p:PublishSingleFile=true --self-contained true
 
+if not %ERRORLEVEL% == 0 goto End
+
 echo.
 echo ### Deploy application ###
 echo.
 
 copy /y "%DeploymentPath%\*.*" "%OutputDir1%\"
 copy /y "%DeploymentPath%\*.*" "%OutputDir2%\"
+
+if not %ERRORLEVEL% == 0 goto End
+
+echo.
+echo.
+echo COMPILING AND DEPLOYING WAS SUCCESFULL.
+echo.
+echo.
+
+:End
+
+pause
