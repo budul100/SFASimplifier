@@ -10,6 +10,7 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Additionals", "Additionals", "{5EBF0CCF-C73C-4219-9071-D43773229930}"
 	ProjectSection(SolutionItems) = preProject
 		ReadMe.md = ReadMe.md
+		_Build.bat = _Build.bat
 	EndProjectSection
 EndProject
 Global
