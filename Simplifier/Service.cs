@@ -127,9 +127,6 @@ namespace SFASimplifier.Simplifier
                 status: "Determine links.",
                 weight: StatusWeightDeterminingConnections);
 
-            segmentFactory.Tidy(
-                parentPackage: infoPackage);
-
             chainFactory.Load(
                 segments: segmentFactory.Segments,
                 parentPackage: infoPackage);

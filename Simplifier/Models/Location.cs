@@ -9,6 +9,8 @@ namespace SFASimplifier.Simplifier.Models
 
         public Geometry Centroid { get; set; }
 
+        public Geometry Geometry { get; set; }
+
         public string Key { get; set; }
 
         public Location Main { get; set; }
@@ -22,7 +24,7 @@ namespace SFASimplifier.Simplifier.Models
         public override string ToString()
         {
             var result = Key
-                ?? Centroid?.Coordinate?.ToString()
+                ?? Geometry?.Centroid?.Coordinate.ToString()
                 ?? base.ToString();
 
             return result;

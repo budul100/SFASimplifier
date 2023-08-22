@@ -12,6 +12,8 @@ namespace SFASimplifier.Simplifier.Models
 
         public Location From { get; set; }
 
+        public Geometry Geometry { get; set; }
+
         public Location To { get; set; }
 
         public IEnumerable<Way> Ways { get; set; }

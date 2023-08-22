@@ -9,13 +9,16 @@ namespace SFASimplifier.Simplifier.Extensions
     {
         #region Public Methods
 
-        public static void Turn(this IEnumerable<Link> links)
+        public static void TurnFrom(this IEnumerable<Link> links, Location location)
         {
-            foreach (var link in links.ToArray())
-            {
-                (link.From, link.To) = (link.To, link.From);
+            var relevants = links
+                .Where(l => l.To == location).ToArray();
 
-                link.Coordinates = link.Coordinates.Reverse().ToArray();
+            foreach (var relevant in relevants)
+            {
+                (relevant.From, relevant.To) = (relevant.To, relevant.From);
+
+                relevant.Coordinates = relevant.Coordinates.Reverse().ToArray();
             }
         }
 

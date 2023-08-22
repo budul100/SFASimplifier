@@ -54,22 +54,28 @@ namespace SFASimplifier.Simplifier.Extensions
         public static IEnumerable<Coordinate> GetMerged(this IEnumerable<Coordinate> coordinates,
             Models.Location from, Models.Location to)
         {
-            var fromIsFirst = from.Centroid.Coordinate.GetDistance(coordinates.First()) <
-                to.Centroid.Coordinate.GetDistance(coordinates.First());
+            var fromCoordinate = from.Centroid?.Coordinate
+                ?? from.Geometry.Centroid?.Coordinate;
 
-            yield return from.Centroid.Coordinate;
+            var toCoordinate = to.Centroid?.Coordinate
+                ?? to.Geometry.Centroid?.Coordinate;
+
+            var fromIsFirst = fromCoordinate.GetDistance(coordinates.First()) <
+                toCoordinate.GetDistance(coordinates.First());
 
             if (!fromIsFirst)
             {
                 coordinates = coordinates.Reverse().ToArray();
             }
 
+            yield return fromCoordinate;
+
             foreach (var coordinate in coordinates)
             {
                 yield return coordinate;
             }
 
-            yield return to.Centroid.Coordinate;
+            yield return toCoordinate;
         }
 
         public static bool IsAcuteAngle(this Coordinate via, Coordinate before, Coordinate after,
@@ -98,11 +104,11 @@ namespace SFASimplifier.Simplifier.Extensions
                 .Reverse().ToArray();
 
             result = result
-                .WithoutAcuteFront(angleMin)
+                .WithoutAcute(angleMin)
                 .Reverse().ToArray();
 
             result = result
-                .WithoutAcuteFront(angleMin).ToArray();
+                .WithoutAcute(angleMin).ToArray();
 
             return result;
         }
@@ -126,7 +132,7 @@ namespace SFASimplifier.Simplifier.Extensions
             }
         }
 
-        private static IEnumerable<Coordinate> WithoutAcuteFront(this IEnumerable<Coordinate> coordinates,
+        private static IEnumerable<Coordinate> WithoutAcute(this IEnumerable<Coordinate> coordinates,
             double angleMin)
         {
             yield return coordinates.First();

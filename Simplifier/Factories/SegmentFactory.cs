@@ -87,38 +87,6 @@ namespace SFASimplifier.Simplifier.Factories
             }
         }
 
-        public void Tidy(IPackage parentPackage)
-        {
-            var fromNodes = Segments
-                .Select(s => s.From);
-            var toNodes = Segments
-                .Select(s => s.To);
-
-            var locationGroups = fromNodes.Union(toNodes).Distinct()
-                .GroupBy(n => n.Location).ToArray();
-
-            using var infoPackage = parentPackage.GetPackage(
-                items: locationGroups,
-                status: "Create location geometry.");
-
-            foreach (var locationGroup in locationGroups)
-            {
-                var relevants = locationGroup.Any(n => n.Location.IsStation())
-                    ? locationGroup.Where(n => n.Location.IsStation())
-                    : locationGroup;
-
-                var coordinates = relevants
-                    .Select(n => n.Coordinate)
-                    .Distinct().ToArray();
-
-                locationFactory.Set(
-                    location: locationGroup.Key,
-                    coordinates: coordinates);
-
-                infoPackage.NextStep();
-            }
-        }
-
         #endregion Public Methods
 
         #region Private Methods

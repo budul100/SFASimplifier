@@ -15,7 +15,8 @@ namespace SFASimplifier.Simplifier.Factories
         private readonly HashSet<HashSet<Models.Location>> areas = new();
         private readonly int fuzzyScore;
         private readonly GeometryFactory geometryFactory;
-        private readonly Dictionary<Models.Point, Models.Location> locations = new();
+        private readonly HashSet<Models.Location> locations = new();
+        private readonly Dictionary<Models.Point, Models.Location> locationsByPoints = new();
         private readonly int maxDistanceAnonymous;
         private readonly int maxDistanceNamed;
         private readonly PointFactory pointFactory;
@@ -38,7 +39,7 @@ namespace SFASimplifier.Simplifier.Factories
 
         #region Public Properties
 
-        public IEnumerable<Models.Location> Locations => locations.Values
+        public IEnumerable<Models.Location> Locations => locations
             .OrderBy(l => l.Key?.ToString()).ToArray();
 
         #endregion Public Properties
@@ -53,13 +54,6 @@ namespace SFASimplifier.Simplifier.Factories
             var result = Get(
                 point: point);
 
-            var coordinates = result.GetCoordinates(
-                coordinate: coordinate);
-
-            Set(
-                location: result,
-                coordinates: coordinates);
-
             return result;
         }
 
@@ -69,11 +63,11 @@ namespace SFASimplifier.Simplifier.Factories
 
             if (point != default)
             {
-                if (!locations.ContainsKey(point))
+                if (!locationsByPoints.ContainsKey(point))
                 {
                     if (!key.IsEmpty())
                     {
-                        result = locations.Values
+                        result = locations
                             .Where(l => !l.Key.IsEmpty()
                                 && Fuzz.Ratio(key, l.Key) >= fuzzyScore
                                 && point.GetDistance(l.Points) < maxDistanceNamed)
@@ -82,7 +76,7 @@ namespace SFASimplifier.Simplifier.Factories
 
                     if (result == default)
                     {
-                        result = locations.Values
+                        result = locations
                             .Where(l => (key.IsEmpty() || l.Key.IsEmpty())
                                 && point.GetDistance(l.Points) < maxDistanceAnonymous)
                             .OrderBy(l => point.GetDistance(l.Points)).FirstOrDefault();
@@ -91,15 +85,16 @@ namespace SFASimplifier.Simplifier.Factories
                     if (result == default)
                     {
                         result = new Models.Location();
+                        locations.Add(result);
                     }
 
-                    locations.Add(
+                    locationsByPoints.Add(
                         key: point,
                         value: result);
                 }
                 else
                 {
-                    result = locations[point];
+                    result = locationsByPoints[point];
                 }
 
                 if (result.Key.IsEmpty())
@@ -108,6 +103,12 @@ namespace SFASimplifier.Simplifier.Factories
                 }
 
                 result.Points.Add(point);
+
+                var coordinates = result.Points
+                    .Select(p => p.Geometry.Coordinate)
+                    .Distinct().ToArray();
+
+                result.Geometry = GetGeometry(coordinates);
             }
 
             return result;
@@ -143,24 +144,7 @@ namespace SFASimplifier.Simplifier.Factories
 
         public void Set(Models.Location location, IEnumerable<Coordinate> coordinates)
         {
-            if (coordinates.Count() == 1)
-            {
-                location.Centroid = geometryFactory.CreatePoint(
-                    coordinate: coordinates.Single());
-            }
-            else if (coordinates.Count() == 2)
-            {
-                location.Centroid = geometryFactory.CreateLineString(
-                    coordinates: coordinates.ToArray()).Boundary.Centroid;
-            }
-            else
-            {
-                var ring = coordinates.ToList();
-                ring.Add(coordinates.First());
-
-                location.Centroid = geometryFactory.CreatePolygon(
-                    coordinates: ring.ToArray()).Boundary.Centroid;
-            }
+            location.Centroid = GetGeometry(coordinates)?.Centroid;
         }
 
         public void Tidy(IPackage parentPackage)
@@ -177,13 +161,11 @@ namespace SFASimplifier.Simplifier.Factories
                 main.Points
                     .UnionWith(area.SelectMany(l => l.Points));
 
-                var coordinates = area
-                    .SelectMany(l => l.Centroid.Coordinates)
+                var coordinates = main.Points
+                    .Select(p => p.Geometry.Coordinate)
                     .Distinct().ToArray();
 
-                Set(
-                    location: main,
-                    coordinates: coordinates);
+                main.Geometry = GetGeometry(coordinates);
 
                 foreach (var location in area)
                 {
@@ -193,5 +175,35 @@ namespace SFASimplifier.Simplifier.Factories
         }
 
         #endregion Public Methods
+
+        #region Private Methods
+
+        private Geometry GetGeometry(IEnumerable<Coordinate> coordinates)
+        {
+            var result = default(Geometry);
+
+            if (coordinates.Count() == 1)
+            {
+                result = geometryFactory.CreatePoint(
+                    coordinate: coordinates.Single());
+            }
+            else if (coordinates.Count() == 2)
+            {
+                result = geometryFactory.CreateLineString(
+                    coordinates: coordinates.ToArray());
+            }
+            else if (coordinates.Any())
+            {
+                var ring = coordinates.ToList();
+                ring.Add(coordinates.First());
+
+                result = geometryFactory.CreatePolygon(
+                    coordinates: ring.ToArray());
+            }
+
+            return result;
+        }
+
+        #endregion Private Methods
     }
 }

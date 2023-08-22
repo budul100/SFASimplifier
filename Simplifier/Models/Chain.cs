@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using NetTopologySuite.Geometries;
+using System.Collections.Generic;
 
 namespace SFASimplifier.Simplifier.Models
 {
@@ -8,6 +9,8 @@ namespace SFASimplifier.Simplifier.Models
         #region Public Properties
 
         public Node From { get; set; }
+
+        public Geometry Geometry { get; set; }
 
         public List<Location> Locations { get; } = new();
 

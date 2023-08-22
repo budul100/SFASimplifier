@@ -35,7 +35,7 @@ namespace SFASimplifier.Simplifier.Models
             longName: "distlocationsanonymous",
             HelpText = "Maximum distance in meters of two points without a name to be merged into the same location.",
             Required = false,
-            Default = 100)]
+            Default = 75)]
         public int DistanceBetweenLocationsAnonymous { get; set; }
 
         [Option(
@@ -64,7 +64,7 @@ namespace SFASimplifier.Simplifier.Models
             HelpText = "Maximum distance between lines to be merged into a single line. " +
                 "This value determines the positions of additional junction points on the lines.",
             Required = false,
-            Default = 50)]
+            Default = 100)]
         public int DistanceToMerge { get; set; }
 
         [Option(
