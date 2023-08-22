@@ -145,7 +145,7 @@ namespace SFASimplifier.Simplifier.Factories
                 {
                     result = geometryFactory
                         .CreateLineString(relevants)
-                        .Centroid.Coordinate;
+                        .InteriorPoint.Coordinate;
                 }
             }
 
@@ -176,7 +176,7 @@ namespace SFASimplifier.Simplifier.Factories
                 {
                     var result = geometryFactory.CreateLineString(currentCoordinates.ToArray());
 
-                    yield return result.Centroid.Coordinate;
+                    yield return result.InteriorPoint.Coordinate;
                 }
                 else
                 {
@@ -398,7 +398,7 @@ namespace SFASimplifier.Simplifier.Factories
                                 links.Remove(linkGeometry.Key);
 
                                 var restCoordinates = linkGeometry.Value
-                                    .GetCoordinatesBehind(toLocation.Geometry.Centroid.Coordinate)
+                                    .GetCoordinatesBehind(toLocation.Geometry.InteriorPoint.Coordinate)
                                     .WithoutAcutes(angleMin).ToArray();
 
                                 if (restCoordinates.Length > 1)

@@ -54,11 +54,11 @@ namespace SFASimplifier.Simplifier.Extensions
         public static IEnumerable<Coordinate> GetMerged(this IEnumerable<Coordinate> coordinates,
             Models.Location from, Models.Location to)
         {
-            var fromCoordinate = from.Centroid?.Coordinate
-                ?? from.Geometry.Centroid?.Coordinate;
+            var fromCoordinate = from.InteriorPoint?.Coordinate
+                ?? from.Geometry.InteriorPoint?.Coordinate;
 
-            var toCoordinate = to.Centroid?.Coordinate
-                ?? to.Geometry.Centroid?.Coordinate;
+            var toCoordinate = to.InteriorPoint?.Coordinate
+                ?? to.Geometry.InteriorPoint?.Coordinate;
 
             var fromIsFirst = fromCoordinate.GetDistance(coordinates.First()) <
                 toCoordinate.GetDistance(coordinates.First());

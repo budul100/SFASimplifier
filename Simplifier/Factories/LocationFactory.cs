@@ -144,7 +144,15 @@ namespace SFASimplifier.Simplifier.Factories
 
         public void Set(Models.Location location, IEnumerable<Coordinate> coordinates)
         {
-            location.Centroid = GetGeometry(coordinates)?.Centroid;
+            if (coordinates?.Any() == true)
+            {
+                var geometry = GetGeometry(coordinates);
+
+                if (geometry != default)
+                {
+                    location.InteriorPoint = geometry.Centroid;
+                }
+            }
         }
 
         public void Tidy(IPackage parentPackage)

@@ -285,14 +285,14 @@ namespace SFASimplifier.Simplifier.Factories
             }
             else
             {
-                var beforeCoordinate = left.Geometry.GetNearest(left.To.Location.Geometry.Centroid);
+                var beforeCoordinate = left.Geometry.GetNearest(left.To.Location.Geometry.InteriorPoint);
                 var beforePosition = left.Geometry.GetPosition(beforeCoordinate);
 
                 var befores = left.Geometry.Coordinates
                     .Where(c => left.Geometry.GetPosition(c) < beforePosition)
                     .TakeLast(2).ToArray();
 
-                var afterCoordinate = right.Geometry.GetNearest(left.To.Location.Geometry.Centroid);
+                var afterCoordinate = right.Geometry.GetNearest(left.To.Location.Geometry.InteriorPoint);
                 var afterPosition = right.Geometry.GetPosition(afterCoordinate);
 
                 var afters = right.Geometry.Coordinates
