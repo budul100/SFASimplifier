@@ -263,6 +263,11 @@ namespace SFASimplifier.Simplifier.Factories
                             after: l.After))
                     .Select(l => l.Link).ToArray();
 
+                if (!relevantLinks.Any())
+                {
+                    relevantLinks = givenLinks.ToArray();
+                }
+
                 var otherLinks = givenLinks
                     .Except(relevantLinks).ToArray();
 
