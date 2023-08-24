@@ -64,8 +64,8 @@ namespace SFASimplifier.Simplifier.Extensions
         public static Coordinate GetNearest(this Geometry current, Geometry other)
         {
             var result = DistanceOp.NearestPoints(
-                g0: other,
-                g1: current).Last();
+                g0: current,
+                g1: other).First();
 
             return result;
         }
@@ -75,7 +75,7 @@ namespace SFASimplifier.Simplifier.Extensions
         {
             foreach (var point in points)
             {
-                var coordinate = geometry.GetNearest(point.Geometry);
+                var coordinate = geometry.GetNearest(point.Geometry.Centroid);
 
                 if (point.IsStation() || point.Geometry.Coordinate.GetDistance(coordinate) <= maxDistanceToLine)
                 {

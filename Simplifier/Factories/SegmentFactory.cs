@@ -1,8 +1,8 @@
-﻿using HashExtensions;
-using NetTopologySuite.Geometries;
+﻿using NetTopologySuite.Geometries;
 using ProgressWatcher.Interfaces;
 using SFASimplifier.Simplifier.Extensions;
 using SFASimplifier.Simplifier.Models;
+using SFASimplifier.Simplifier.Structs;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,12 +13,12 @@ namespace SFASimplifier.Simplifier.Factories
     {
         #region Private Fields
 
+        private readonly Dictionary<ConnectionKey, HashSet<Segment>> connections = new();
         private readonly GeometryFactory geometryFactory;
         private readonly IEnumerable<string> keyAttributes;
         private readonly LocationFactory locationFactory;
         private readonly int maxDistanceToCapture;
         private readonly PointFactory pointFactory;
-        private readonly Dictionary<int, Segment> segments = new();
 
         #endregion Private Fields
 
@@ -38,7 +38,7 @@ namespace SFASimplifier.Simplifier.Factories
 
         #region Public Properties
 
-        public IEnumerable<Segment> Segments => segments.Values
+        public IEnumerable<Segment> Segments => connections.Values.SelectMany(g => g)
             .OrderBy(s => s.From.Location.Key?.ToString())
             .ThenBy(s => s.To.Location.Key?.ToString()).ToArray();
 
@@ -91,30 +91,43 @@ namespace SFASimplifier.Simplifier.Factories
 
         #region Private Methods
 
-        private void AddSegment(Node nodeFrom, Node nodeTo, Coordinate[] coordinates, IEnumerable<Way> ways)
+        private void AddSegment(Node nodeFrom, Node nodeTo, IEnumerable<Coordinate> coordinates, IEnumerable<Way> ways)
         {
-            var geometry = geometryFactory.CreateLineString(
-                coordinates: coordinates);
-            var length = geometry.GetLength();
+            var key = new ConnectionKey(
+                from: nodeFrom.Location,
+                to: nodeTo.Location);
 
-            var segment = new Segment
+            var length = coordinates.GetDistance();
+
+            if (!connections.ContainsKey(key))
             {
-                From = nodeFrom,
-                Geometry = geometry,
-                Length = length,
-                To = nodeTo,
-            };
-
-            var key = geometry.Coordinates.GetSequenceHash();
-
-            if (!segments.ContainsKey(key))
-            {
-                segments.Add(
+                connections.Add(
                     key: key,
-                    value: segment);
+                    value: new HashSet<Segment>());
             }
 
-            segments[key].Ways.UnionWith(ways);
+            var segment = connections[key]
+                .SingleOrDefault(c => c.Length == length
+                    && c.Geometry.Coordinates.SequenceEqual(coordinates));
+
+            if (segment == default)
+            {
+                var geometry = geometryFactory.CreateLineString(
+                    coordinates: coordinates.ToArray());
+
+                segment = new Segment
+                {
+                    From = nodeFrom,
+                    Geometry = geometry,
+                    Key = key,
+                    Length = length,
+                    To = nodeTo,
+                };
+
+                connections[key].Add(segment);
+            }
+
+            segment.Ways.UnionWith(ways);
         }
 
         private void AddSegments(Geometry geometry, IEnumerable<Node> nodes, IEnumerable<Way> ways, IPackage parentPackage)
@@ -207,8 +220,8 @@ namespace SFASimplifier.Simplifier.Factories
                         .GetPrimaryAttribute(keyAttributes);
 
                     var location = locationFactory.Get(
-                        key: key,
-                        point: node.Point);
+                        point: node.Point,
+                        key: key);
 
                     if (location != default)
                     {

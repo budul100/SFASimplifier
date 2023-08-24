@@ -69,7 +69,7 @@ namespace SFASimplifier.Simplifier.Factories
                     {
                         result = locations
                             .Where(l => !l.Key.IsEmpty()
-                                && Fuzz.Ratio(key, l.Key) >= fuzzyScore
+                                && (key == l.Key || Fuzz.Ratio(key, l.Key) >= fuzzyScore)
                                 && point.GetDistance(l.Points) < maxDistanceNamed)
                             .OrderBy(l => point.GetDistance(l.Points)).FirstOrDefault();
                     }
@@ -150,7 +150,7 @@ namespace SFASimplifier.Simplifier.Factories
 
                 if (geometry != default)
                 {
-                    location.InteriorPoint = geometry.Centroid;
+                    location.Center = geometry.Centroid;
                 }
             }
         }
@@ -205,7 +205,7 @@ namespace SFASimplifier.Simplifier.Factories
                 var ring = coordinates.ToList();
                 ring.Add(coordinates.First());
 
-                result = geometryFactory.CreatePolygon(
+                result = geometryFactory.CreateLinearRing(
                     coordinates: ring.ToArray());
             }
 

@@ -9,7 +9,7 @@ namespace SFASimplifier.Simplifier.Models
 
         public Geometry Geometry { get; set; }
 
-        public Geometry InteriorPoint { get; set; }
+        public Geometry Center { get; set; }
 
         public string Key { get; set; }
 

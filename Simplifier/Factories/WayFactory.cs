@@ -64,6 +64,33 @@ namespace SFASimplifier.Simplifier.Factories
 
         #region Private Methods
 
+        private IEnumerable<IEnumerable<Coordinate>> GetCoordinateGroups(Coordinate[] allCoordinates, int indexFrom, int indexTo)
+        {
+            var result = new List<Coordinate>();
+
+            for (var index = indexFrom; index <= indexTo; index++)
+            {
+                if (bboxEnvelope?.Contains(allCoordinates[index]) != false)
+                {
+                    result.Add(allCoordinates[index]);
+                }
+                else if (result.Any())
+                {
+                    if (result.Distinct().Count() > 1)
+                    {
+                        yield return result;
+                    }
+
+                    result = new List<Coordinate>();
+                }
+            }
+
+            if (result.Distinct().Count() > 1)
+            {
+                yield return result;
+            }
+        }
+
         private IEnumerable<Geometry> GetGeometries(Feature line, IPackage parentPackage)
         {
             var geometries = line.GetGeometries().ToArray();
@@ -120,17 +147,21 @@ namespace SFASimplifier.Simplifier.Factories
 
             if (indexTo > indexFrom + 1)
             {
-                var coordinates = allCoordinates[indexFrom..(indexTo + 1)]
-                    .Where(c => bboxEnvelope?.Contains(c) != false).ToArray();
+                var coordinateGroups = GetCoordinateGroups(
+                    allCoordinates: allCoordinates,
+                    indexFrom: indexFrom,
+                    indexTo: indexTo).ToArray();
 
-                if (coordinates?.Length > 1)
+                foreach (var coordinateGroup in coordinateGroups)
                 {
-                    var geometry = geometryFactory.CreateLineString(coordinates);
-                    result = geometries.SingleOrDefault(g => g.Equals(geometry));
+                    result = geometries
+                        .SingleOrDefault(g => g.Coordinates.SequenceEqual(coordinateGroup));
 
                     if (result == default)
                     {
+                        var geometry = geometryFactory.CreateLineString(coordinateGroup.ToArray());
                         result = geometry;
+
                         geometries.Add(geometry);
                     }
                 }
@@ -143,15 +174,15 @@ namespace SFASimplifier.Simplifier.Factories
         {
             var result = default(Way);
 
-            var geometries = GetGeometries(
+            var currents = GetGeometries(
                 line: line,
                 parentPackage: parentPackage).ToArray();
 
-            if (geometries.Any())
+            if (currents.Any())
             {
                 result = new Way
                 {
-                    Geometries = geometries,
+                    Geometries = currents,
                     Feature = line,
                 };
 

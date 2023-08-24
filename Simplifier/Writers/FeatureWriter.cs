@@ -74,7 +74,7 @@ namespace SFASimplifier.Simplifier.Writers
                     preventMergingAttributes: preventMergingAttributes);
 
                 var feature = new Feature(
-                    geometry: relevant.InteriorPoint,
+                    geometry: relevant.Center,
                     attributes: attributes);
 
                 featureCollection.Add(feature);

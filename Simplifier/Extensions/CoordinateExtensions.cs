@@ -20,6 +20,29 @@ namespace SFASimplifier.Simplifier.Extensions
 
         #region Public Methods
 
+        public static IEnumerable<Coordinate> GetDirected(this IEnumerable<Coordinate> coordinates,
+            Models.Location from, Models.Location to)
+        {
+            var fromCoordinate = from.Center?.Coordinate
+                ?? from.Geometry.InteriorPoint?.Coordinate;
+
+            var toCoordinate = to.Center?.Coordinate
+                ?? to.Geometry.InteriorPoint?.Coordinate;
+
+            var fromIsFirst = fromCoordinate.GetDistance(coordinates.First()) <
+                toCoordinate.GetDistance(coordinates.First());
+
+            if (!fromIsFirst)
+            {
+                coordinates = coordinates.Reverse().ToArray();
+            }
+
+            foreach (var coordinate in coordinates)
+            {
+                yield return coordinate;
+            }
+        }
+
         public static double GetDistance(this IEnumerable<Coordinate> coordinates)
         {
             var result = 0.0;
@@ -54,10 +77,10 @@ namespace SFASimplifier.Simplifier.Extensions
         public static IEnumerable<Coordinate> GetMerged(this IEnumerable<Coordinate> coordinates,
             Models.Location from, Models.Location to)
         {
-            var fromCoordinate = from.InteriorPoint?.Coordinate
+            var fromCoordinate = from.Center?.Coordinate
                 ?? from.Geometry.InteriorPoint?.Coordinate;
 
-            var toCoordinate = to.InteriorPoint?.Coordinate
+            var toCoordinate = to.Center?.Coordinate
                 ?? to.Geometry.InteriorPoint?.Coordinate;
 
             var fromIsFirst = fromCoordinate.GetDistance(coordinates.First()) <

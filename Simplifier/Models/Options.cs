@@ -12,7 +12,7 @@ namespace SFASimplifier.Simplifier.Models
             longName: "angleminlink",
             HelpText = "The min value of the angle between links in a line. This values creates smooth curves on lines.",
             Required = false,
-            Default = 130)]
+            Default = 160)]
         public int AngleMinLinks { get; set; }
 
         [Option(
@@ -26,7 +26,7 @@ namespace SFASimplifier.Simplifier.Models
         [Option(
             longName: "bboxfilter",
             HelpText = "Two coordinates describing a bounding box where the data is filtered by. The values must be given in form " +
-                "x1, y1, x2, y2 respectivly lon1, lat1, lon2, lat2. Bounding boxes can be identified by http://bboxfinder.com for example.",
+                "x1,y1,x2,y2 respectivly lon1,lat1,lon2,lat2. Bounding boxes can be identified by http://bboxfinder.com for example.",
             Separator = ',',
             Required = false)]
         public IEnumerable<string> BBoxFilter { get; set; }
@@ -35,7 +35,7 @@ namespace SFASimplifier.Simplifier.Models
             longName: "distlocationsanonymous",
             HelpText = "Maximum distance in meters of two points without a name to be merged into the same location.",
             Required = false,
-            Default = 75)]
+            Default = 100)]
         public int DistanceBetweenLocationsAnonymous { get; set; }
 
         [Option(
@@ -56,7 +56,7 @@ namespace SFASimplifier.Simplifier.Models
             longName: "distjunction",
             HelpText = "Minimum distance between the end of a link and a junction to have this point considered as own location.",
             Required = false,
-            Default = 100)]
+            Default = 50)]
         public int DistanceToJunction { get; set; }
 
         [Option(

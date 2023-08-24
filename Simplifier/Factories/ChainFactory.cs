@@ -1,5 +1,4 @@
-﻿using HashExtensions;
-using NetTopologySuite.Geometries;
+﻿using NetTopologySuite.Geometries;
 using ProgressWatcher.Interfaces;
 using SFASimplifier.Simplifier.Extensions;
 using SFASimplifier.Simplifier.Models;
@@ -14,7 +13,7 @@ namespace SFASimplifier.Simplifier.Factories
         #region Private Fields
 
         private readonly int angleMin;
-        private readonly Dictionary<(int, double), Chain> chains = new();
+        private readonly Dictionary<ConnectionKey, HashSet<Chain>> connections = new();
         private readonly GeometryFactory geometryFactory;
         private readonly int lengthSplit;
         private readonly LocationFactory locationFactory;
@@ -38,7 +37,7 @@ namespace SFASimplifier.Simplifier.Factories
 
         #region Public Properties
 
-        public IEnumerable<Chain> Chains => chains.Values
+        public IEnumerable<Chain> Chains => connections.Values.SelectMany(g => g)
             .OrderBy(c => c.From.Location.Key?.ToString())
             .ThenBy(s => s.To.Location.Key?.ToString()).ToArray();
 
@@ -76,21 +75,29 @@ namespace SFASimplifier.Simplifier.Factories
                 from: chain.From.Location,
                 to: chain.To.Location))
             {
-                var hash = chain.Segments.GetSequenceHash();
-                var length = chain.Geometry.GetLength();
-                var chainKey = (hash, length);
+                chain.Length = chain.Geometry.GetLength();
 
-                if (!chains.ContainsKey(chainKey))
+                chain.Key = new ConnectionKey(
+                    from: chain.From.Location,
+                    to: chain.To.Location);
+
+                if (!connections.ContainsKey(chain.Key))
                 {
-                    chain.Length = length;
+                    connections.Add(
+                        key: chain.Key,
+                        value: new HashSet<Chain>());
+                }
 
-                    chain.Key = new ConnectionKey(
-                        from: chain.From.Location,
-                        to: chain.To.Location);
+                var reverse = chain.Geometry.Coordinates.Reverse().ToArray();
 
-                    chains.Add(
-                        key: chainKey,
-                        value: chain);
+                var exists = connections[chain.Key]
+                    .Any(c => c.Length == chain.Length
+                        && (c.Geometry.Coordinates.SequenceEqual(chain.Geometry.Coordinates)
+                        || c.Geometry.Coordinates.SequenceEqual(reverse)));
+
+                if (!exists)
+                {
+                    connections[chain.Key].Add(chain);
                 }
             }
         }
