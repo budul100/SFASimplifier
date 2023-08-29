@@ -14,14 +14,15 @@ namespace SFASimplifier.Simplifier.Extensions
 
         #region Public Methods
 
-        public static IEnumerable<IEnumerable<T>> GetLengthGroups<T>(this IEnumerable<T> chains,
+        public static IEnumerable<IEnumerable<T>> GetLengthGroups<T>(this IEnumerable<T> connections,
             int lengthSplit)
             where T : Connection
         {
-            if (chains.Any())
+            if (connections.Any())
             {
-                var givens = chains
-                    .OrderBy(g => g.Length).ToHashSet();
+                var givens = connections
+                    .OrderBy(c => c.Coordinates.GetCurve())
+                    .ThenBy(c => c.Length).ToHashSet();
 
                 var result = new HashSet<T>();
                 var currentSplit = 1 + ((double)lengthSplit / 100);

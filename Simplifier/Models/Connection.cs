@@ -1,10 +1,14 @@
-﻿using SFASimplifier.Simplifier.Structs;
+﻿using NetTopologySuite.Geometries;
+using SFASimplifier.Simplifier.Structs;
+using System.Collections.Generic;
 
 namespace SFASimplifier.Simplifier.Models
 {
     internal abstract class Connection
     {
         #region Public Properties
+
+        public abstract IEnumerable<Coordinate> Coordinates { get; }
 
         public ConnectionKey Key { get; set; }
 

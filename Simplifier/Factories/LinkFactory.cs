@@ -4,7 +4,6 @@ using ProgressWatcher.Interfaces;
 using SFASimplifier.Simplifier.Extensions;
 using SFASimplifier.Simplifier.Models;
 using SFASimplifier.Simplifier.Structs;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -61,10 +60,15 @@ namespace SFASimplifier.Simplifier.Factories
         public void Tidy(IPackage parentPackage)
         {
             using var infoPackage = parentPackage.GetPackage(
-                steps: 5,
+                steps: 6,
                 status: "Tidy links");
 
-            MergeLinks(
+            MergeBranches(
+                parentPackage: infoPackage);
+
+            // Merging branches must be done twice to cover both ends of the links
+
+            MergeBranches(
                 parentPackage: infoPackage);
 
             MergeLinks(
@@ -130,6 +134,28 @@ namespace SFASimplifier.Simplifier.Factories
                 }
 
                 infoPackage.NextStep();
+            }
+        }
+
+        private void FindSuccessors(List<Link> givenLinks, Link link)
+        {
+            givenLinks.Add(link);
+
+            if (!link.To.IsStation())
+            {
+                var successors = links
+                    .Where(l => !givenLinks.Contains(l)
+                        && (l.From == link.To || l.To == link.To)).ToArray();
+
+                if (successors.Length == 1)
+                {
+                    var current = successors.Single();
+                    current.TurnFrom(link.To);
+
+                    FindSuccessors(
+                        givenLinks: givenLinks,
+                        link: current);
+                }
             }
         }
 
@@ -203,13 +229,14 @@ namespace SFASimplifier.Simplifier.Factories
                 {
                     result = new Link
                     {
-                        Coordinates = coordinates,
                         From = from,
                         Key = key,
                         Length = length,
                         To = to,
                         Ways = ways,
                     };
+
+                    result.Set(coordinates);
                 }
 
                 result.Ways = result.Ways
@@ -221,214 +248,96 @@ namespace SFASimplifier.Simplifier.Factories
             return result;
         }
 
-        private Dictionary<Link, (Coordinate, int)> GetNearest(Coordinate coordinate, IDictionary<Link, Geometry> geometries)
+        private void MergeBranch(Models.Location fromLocation, IEnumerable<Link> givenLinks)
         {
-            var result = new Dictionary<Link, (Coordinate, int)>();
+            var branchFactory = new BranchFactory(
+                geometryFactory: geometryFactory,
+                locationFactory: locationFactory,
+                distanceToMerge: distanceToMerge,
+                distanceToJunction: distanceToJunction,
+                angleMin: angleMin);
 
-            var envelop = new Envelope(coordinate);
-            var envelopGeometry = geometryFactory.ToGeometry(envelop);
+            branchFactory.Load(
+                fromLocation: fromLocation,
+                links: givenLinks);
 
-            foreach (var geometry in geometries)
+            if (branchFactory.Branches?.Any() == true)
             {
-                var nearest = geometry.Value.GetNearest(envelopGeometry);
-                var distance = Convert.ToInt32(coordinate.GetDistance(nearest));
+                var toLinks = new HashSet<Link>();
 
-                result.Add(
-                    key: geometry.Key,
-                    value: (nearest, distance));
+                foreach (var branch in branchFactory.Branches)
+                {
+                    this.links.Remove(branch.Link);
+
+                    var toCoordinates = branch.Geometry
+                        .GetCoordinatesBehind(branchFactory.ToLocation.Geometry.InteriorPoint.Coordinate).ToArray();
+
+                    if (toCoordinates.Length > 2)
+                    {
+                        var toLink = GetLink(
+                            coordinates: toCoordinates,
+                            from: branchFactory.ToLocation,
+                            to: branch.Link.To,
+                            ways: branch.Link.Ways);
+
+                        if (toLink?.Coordinates.SequenceEqual(branchFactory.BaseLink.Coordinates) == false)
+                        {
+                            toLinks.Add(toLink);
+                        }
+                    }
+                }
+
+                var mergedWays = branchFactory.Branches
+                    .SelectMany(b => b.Link.Ways).Distinct().ToArray();
+
+                var mergedLink = GetLink(
+                    coordinates: branchFactory.Coordinates,
+                    from: fromLocation,
+                    to: branchFactory.ToLocation,
+                    ways: mergedWays);
+
+                if (toLinks.Any())
+                {
+                    toLinks.TurnFrom(
+                        location: branchFactory.ToLocation);
+
+                    MergeBranch(
+                        fromLocation: branchFactory.ToLocation,
+                        givenLinks: toLinks);
+                }
             }
 
-            return result;
+            if (branchFactory.Separates?.Count() > 1)
+            {
+                MergeBranch(
+                    fromLocation: fromLocation,
+                    givenLinks: branchFactory.Separates);
+            }
         }
 
-        private void MergeLinks(Models.Location fromLocation, IEnumerable<Link> givenLinks)
+        private void MergeBranches(IPackage parentPackage)
         {
-            if (givenLinks.Count(l => l.From == fromLocation) > 1)
+            var relevantLocations = links.Select(l => l.From)
+                .Union(links.Select(l => l.To)).Distinct()
+                .OrderBy(l => l.ToString()).ToArray();
+
+            using var infoPackage = parentPackage.GetPackage(
+                items: relevantLocations,
+                status: "Merge branches.");
+
+            foreach (var relevantLocation in relevantLocations)
             {
-                var baseLink = givenLinks
-                    .Where(l => l.From == fromLocation)
-                    .OrderBy(l => l.Length).FirstOrDefault();
+                links.TurnFrom(
+                    location: relevantLocation);
 
-                var baseCoordinates = baseLink.Coordinates.ToArray();
+                var relevantLinks = links
+                    .Where(l => l.From == relevantLocation).ToArray();
 
-                var relevantLinks = givenLinks
-                    .Select(l => (
-                        Link: l,
-                        After: GetCoordinateAfter(
-                            link: l,
-                            coordinate: baseCoordinates[0])))
-                    .Where(l => l.After != default
-                        && baseCoordinates[0].IsAcuteAngle(
-                            before: baseCoordinates[1],
-                            after: l.After))
-                    .Select(l => l.Link).ToArray();
+                MergeBranch(
+                    fromLocation: relevantLocation,
+                    givenLinks: relevantLinks);
 
-                if (!relevantLinks.Any())
-                {
-                    relevantLinks = givenLinks.ToArray();
-                }
-
-                var otherLinks = givenLinks
-                    .Except(relevantLinks).ToArray();
-
-                MergeLinks(
-                    fromLocation: fromLocation,
-                    givenLinks: otherLinks);
-
-                var linkGeometries = relevantLinks.ToDictionary(
-                    keySelector: l => l,
-                    elementSelector: l => GetGeometry(l.Coordinates));
-
-                var mergedCoordinates = new List<Coordinate>();
-
-                var last = default(Coordinate);
-                var length = 0;
-
-                foreach (var baseCoordinate in baseCoordinates)
-                {
-                    if (last != default)
-                    {
-                        length += Convert.ToInt32(baseCoordinate.GetDistance(last));
-                    }
-
-                    var isInDistanceToJunction = length <= distanceToJunction;
-
-                    var currentDistanceToMerge = isInDistanceToJunction || length < distanceToMerge
-                        ? length
-                        : distanceToMerge;
-
-                    last = baseCoordinate;
-
-                    var linkCoordinates = GetNearest(
-                        coordinate: baseCoordinate,
-                        geometries: linkGeometries);
-
-                    var remoteCoordinates = linkCoordinates
-                        .Where(c => length > 0
-                            && c.Value.Item2 >= distanceToMerge).ToArray();
-
-                    if (remoteCoordinates.Any()
-                        && isInDistanceToJunction)
-                    {
-                        foreach (var remoteCoordinate in remoteCoordinates)
-                        {
-                            linkGeometries.Remove(remoteCoordinate.Key);
-                            linkCoordinates.Remove(remoteCoordinate.Key);
-                        }
-
-                        var remoteLinks = remoteCoordinates
-                            .Select(l => l.Key).ToArray();
-
-                        MergeLinks(
-                            fromLocation: fromLocation,
-                            givenLinks: remoteLinks);
-                    }
-
-                    var mergedCoordinate = default(Coordinate);
-
-                    if (linkCoordinates.Any()
-                        && (!remoteCoordinates.Any() || isInDistanceToJunction))
-                    {
-                        var relevantCoordinates = linkCoordinates
-                            .Where(c => length == 0 || c.Value.Item2 < distanceToMerge)
-                            .Select(c => c.Value.Item1).ToArray();
-
-                        if (relevantCoordinates.Length > 1)
-                        {
-                            mergedCoordinate = geometryFactory
-                                .CreateLineString(relevantCoordinates)
-                                .Centroid.Coordinate;
-
-                            mergedCoordinates.Add(mergedCoordinate);
-                        }
-                    }
-
-                    if (mergedCoordinate == default || baseCoordinate.Equals(baseCoordinates.Last()))
-                    {
-                        var toLocation = baseCoordinate.Equals(baseCoordinates.Last())
-                            ? baseLink.To
-                            : default;
-
-                        if (toLocation == default
-                            && mergedCoordinates.Any())
-                        {
-                            toLocation = locationFactory.Get(
-                                coordinate: mergedCoordinates[^1]);
-                        }
-
-                        if (mergedCoordinates.Count < 2)
-                        {
-                            if (!isInDistanceToJunction)
-                            {
-                                foreach (var remoteCoordinate in remoteCoordinates)
-                                {
-                                    linkGeometries.Remove(remoteCoordinate.Key);
-                                    linkCoordinates.Remove(remoteCoordinate.Key);
-                                }
-
-                                var remoteLinks = remoteCoordinates
-                                    .Select(l => l.Key).ToArray();
-
-                                MergeLinks(
-                                    fromLocation: fromLocation,
-                                    givenLinks: remoteLinks);
-                            }
-
-                            if (fromLocation != toLocation || remoteCoordinates.Any())
-                            {
-                                MergeLinks(
-                                    fromLocation: fromLocation,
-                                    givenLinks: linkCoordinates.Keys);
-                            }
-                        }
-                        else
-                        {
-                            var toLinks = new HashSet<Link>();
-
-                            foreach (var linkGeometry in linkGeometries)
-                            {
-                                links.Remove(linkGeometry.Key);
-
-                                var toCoordinates = linkGeometry.Value
-                                    .GetCoordinatesBehind(toLocation.Geometry.InteriorPoint.Coordinate).ToArray();
-
-                                var toLink = GetLink(
-                                    coordinates: toCoordinates,
-                                    from: toLocation,
-                                    to: linkGeometry.Key.To,
-                                    ways: linkGeometry.Key.Ways);
-
-                                if (toLink?.Coordinates.SequenceEqual(baseCoordinates) == false)
-                                {
-                                    toLinks.Add(toLink);
-                                }
-                            }
-
-                            var mergedWays = linkCoordinates.Keys
-                                .SelectMany(l => l.Ways).Distinct().ToArray();
-
-                            links.Remove(baseLink);
-
-                            var mergedLink = GetLink(
-                                coordinates: mergedCoordinates,
-                                from: fromLocation,
-                                to: toLocation,
-                                ways: mergedWays);
-
-                            if (toLinks.Any())
-                            {
-                                links.TurnFrom(
-                                    location: toLocation);
-
-                                MergeLinks(
-                                    fromLocation: toLocation,
-                                    givenLinks: toLinks);
-                            }
-                        }
-
-                        break;
-                    }
-                }
+                infoPackage.NextStep();
             }
         }
 
@@ -447,12 +356,38 @@ namespace SFASimplifier.Simplifier.Factories
                 links.TurnFrom(
                     location: relevantLocation);
 
-                var relevantLinks = links
+                var currents = links
                     .Where(l => l.From == relevantLocation).ToArray();
 
-                MergeLinks(
-                    fromLocation: relevantLocation,
-                    givenLinks: relevantLinks);
+                foreach (var current in currents)
+                {
+                    var successors = new List<Link>();
+
+                    FindSuccessors(
+                        successors,
+                        current);
+
+                    if (successors.Count > 1)
+                    {
+                        var ways = successors
+                            .SelectMany(l => l.Ways)
+                            .Distinct().ToArray();
+
+                        var coordinates = successors
+                            .SelectMany(l => l.Coordinates).ToArray();
+
+                        GetLink(
+                            coordinates: coordinates,
+                            from: successors[0].From,
+                            to: successors[^1].To,
+                            ways: ways);
+
+                        foreach (var successor in successors)
+                        {
+                            links.Remove(successor);
+                        }
+                    }
+                }
 
                 infoPackage.NextStep();
             }
@@ -470,11 +405,10 @@ namespace SFASimplifier.Simplifier.Factories
                     from: link.From,
                     to: link.To).ToArray();
 
-                var coordinates = mergeds
+                var correcteds = mergeds
                     .WithoutAcutes(angleMin).ToArray();
 
-                link.Coordinates = coordinates;
-                link.Geometry = GetGeometry(coordinates);
+                link.Set(correcteds);
 
                 infoPackage.NextStep();
             }
@@ -523,7 +457,7 @@ namespace SFASimplifier.Simplifier.Factories
                     .Distinct().ToArray();
 
                 var lineStrings = wayGroup.Key.Links
-                    .Select(l => l.Geometry)
+                    .Select(l => GetGeometry(l.Coordinates))
                     .OfType<LineString>().ToArray();
 
                 wayGroup.Key.Geometry = lineStrings.Length > 1

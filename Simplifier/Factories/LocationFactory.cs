@@ -69,7 +69,7 @@ namespace SFASimplifier.Simplifier.Factories
                     {
                         result = locations
                             .Where(l => !l.Key.IsEmpty()
-                                && (key == l.Key || Fuzz.Ratio(key, l.Key) >= fuzzyScore)
+                                && (key.Contains(l.Key) || l.Key.Contains(key) || Fuzz.Ratio(key, l.Key) >= fuzzyScore)
                                 && point.GetDistance(l.Points) < maxDistanceNamed)
                             .OrderBy(l => point.GetDistance(l.Points)).FirstOrDefault();
                     }

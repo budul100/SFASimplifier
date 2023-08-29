@@ -16,9 +16,21 @@ namespace SFASimplifier.Simplifier.Extensions
 
             foreach (var relevant in relevants)
             {
-                (relevant.From, relevant.To) = (relevant.To, relevant.From);
+                relevant.TurnFrom(
+                    location: location);
+            }
+        }
 
-                relevant.Coordinates = relevant.Coordinates.Reverse().ToArray();
+        public static void TurnFrom(this Link link, Location location)
+        {
+            if (link.To == location)
+            {
+                (link.From, link.To) = (link.To, link.From);
+
+                var reverseds = link.Coordinates
+                    .Reverse().ToArray();
+
+                link.Set(reverseds);
             }
         }
 

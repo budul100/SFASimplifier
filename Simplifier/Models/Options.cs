@@ -42,7 +42,7 @@ namespace SFASimplifier.Simplifier.Models
             longName: "distlocationsnamed",
             HelpText = "Maximum distance in meters of two points with the same name (based on the locfuzzyscore) to be merged into the same location.",
             Required = false,
-            Default = 500)]
+            Default = 250)]
         public int DistanceBetweenLocationsNamed { get; set; }
 
         [Option(
@@ -56,7 +56,7 @@ namespace SFASimplifier.Simplifier.Models
             longName: "distjunction",
             HelpText = "Minimum distance between the end of a link and a junction to have this point considered as own location.",
             Required = false,
-            Default = 50)]
+            Default = 300)]
         public int DistanceToJunction { get; set; }
 
         [Option(

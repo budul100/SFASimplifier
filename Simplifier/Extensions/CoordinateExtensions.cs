@@ -20,8 +20,25 @@ namespace SFASimplifier.Simplifier.Extensions
 
         #region Public Methods
 
+        public static int GetCurve(this IEnumerable<Coordinate> coordinates)
+        {
+            var result = 0;
+
+            if (coordinates?.Any() != true)
+            {
+                var angleRadAverage = coordinates.GetAnglesRad()
+                    .Average();
+
+                var angleDegAverage = Math.Abs(AngleUtility.ToDegrees(angleRadAverage));
+
+                result = 180 - Convert.ToInt32(angleDegAverage);
+            }
+
+            return result;
+        }
+
         public static IEnumerable<Coordinate> GetDirected(this IEnumerable<Coordinate> coordinates,
-            Models.Location from, Models.Location to)
+                   Models.Location from, Models.Location to)
         {
             var fromCoordinate = from.Center?.Coordinate
                 ?? from.Geometry.InteriorPoint?.Coordinate;
@@ -101,10 +118,63 @@ namespace SFASimplifier.Simplifier.Extensions
             yield return toCoordinate;
         }
 
+        public static bool IsAcuteAngle(Coordinate current0, Coordinate current1,
+            Coordinate other0, Coordinate other1, double angleMin = 90)
+        {
+            if (current0 is null)
+            {
+                throw new ArgumentNullException(nameof(current0));
+            }
+
+            if (current1 is null)
+            {
+                throw new ArgumentNullException(nameof(current1));
+            }
+
+            if (other0 is null)
+            {
+                throw new ArgumentNullException(nameof(other0));
+            }
+
+            if (other1 is null)
+            {
+                throw new ArgumentNullException(nameof(other1));
+            }
+
+            var currentAngleRad = AngleUtility.Angle(
+                p0: current0,
+                p1: current1);
+
+            var otherAngleRad = AngleUtility.Angle(
+                p0: other0,
+                p1: other1);
+
+            var angleRad = Math.Abs(currentAngleRad - otherAngleRad);
+
+            var angleDeg = AngleUtility.ToDegrees(angleRad);
+
+            return angleDeg <= angleMin;
+        }
+
         public static bool IsAcuteAngle(this Coordinate via, Coordinate before, Coordinate after,
             double angleMin = 90)
         {
-            if (before == default || after == default || before.Equals2D(after))
+            if (via is null)
+            {
+                throw new ArgumentNullException(nameof(via));
+            }
+
+            if (before is null)
+            {
+                throw new ArgumentNullException(nameof(before));
+            }
+
+            if (after is null)
+            {
+                throw new ArgumentNullException(nameof(after));
+            }
+
+            if (before.Equals2D(after))
             {
                 return true;
             }
@@ -152,6 +222,19 @@ namespace SFASimplifier.Simplifier.Extensions
                 }
 
                 last = coordinate;
+            }
+        }
+
+        private static IEnumerable<double> GetAnglesRad(this IEnumerable<Coordinate> coordinates)
+        {
+            for (var index = 1; index < coordinates.Count() - 1; index++)
+            {
+                var result = AngleUtility.AngleBetween(
+                    tip1: coordinates.ElementAt(index - 1),
+                    tail: coordinates.ElementAt(index),
+                    tip2: coordinates.ElementAt(index + 1));
+
+                yield return result;
             }
         }
 

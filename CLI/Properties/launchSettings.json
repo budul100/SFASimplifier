@@ -22,7 +22,7 @@
     },
     "Convert East (filtered)": {
       "commandName": "Project",
-      "commandLineArgs": "-i \"..\\..\\..\\..\\Additionals\\Samples\\Germany-East.geojson\" -o \"..\\..\\..\\..\\Additionals\\Samples\\Germany-East_.geojson\" --bboxfilter 13.053131,52.358829,13.743896,52.683875 --locfuzzyscore 70"
+      "commandLineArgs": "-i \"..\\..\\..\\..\\Additionals\\Samples\\Germany-East.geojson\" -o \"..\\..\\..\\..\\Additionals\\Samples\\Germany-East_.geojson\" --bboxfilter 13.241615,52.460612,13.484001,52.557777 --locfuzzyscore 50"
     }
   }
 }
