@@ -21,8 +21,8 @@
       "commandLineArgs": "-i \"..\\..\\..\\..\\Additionals\\Samples\\Ontario.geojson\" -o \"..\\..\\..\\..\\Additionals\\Samples\\Ontario_.geojson\" --lineattrkeyfilter \"GO Transit Newmarket Subdivision\""
     },
     "Convert East (filtered)": {
-      "commandName": "Project",
-      "commandLineArgs": "-i \"..\\..\\..\\..\\Additionals\\Samples\\Germany-East.geojson\" -o \"..\\..\\..\\..\\Additionals\\Samples\\Germany-East_.geojson\" --bboxfilter 13.241615,52.460612,13.484001,52.557777 --locfuzzyscore 50"
+      "commandName": "Project"
+      "commandLineArgs": "-i \"..\\..\\..\\..\\Additionals\\Samples\\Germany-East.geojson\" -o \"..\\..\\..\\..\\Additionals\\Samples\\Germany-East_.geojson\" --bboxfilter 13.199387,52.437595,13.580475,52.580314 --locfuzzyscore 50"
     }
   }
 }

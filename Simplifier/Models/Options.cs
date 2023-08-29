@@ -12,7 +12,7 @@ namespace SFASimplifier.Simplifier.Models
             longName: "angleminlink",
             HelpText = "The min value of the angle between links in a line. This values creates smooth curves on lines.",
             Required = false,
-            Default = 160)]
+            Default = 150)]
         public int AngleMinLinks { get; set; }
 
         [Option(

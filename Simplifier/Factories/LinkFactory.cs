@@ -80,7 +80,7 @@ namespace SFASimplifier.Simplifier.Factories
             TidyLinks(
                 parentPackage: infoPackage);
 
-            TidyWays(
+            UpdateWays(
                 parentPackage: infoPackage);
         }
 
@@ -395,20 +395,31 @@ namespace SFASimplifier.Simplifier.Factories
 
         private void TidyLinks(IPackage parentPackage)
         {
+            var givenLinks = Links.ToArray();
+
             using var infoPackage = parentPackage.GetPackage(
-                items: Links,
+                items: givenLinks,
                 status: "Tidy link geometries.");
 
-            foreach (var link in Links)
+            foreach (var givenLink in givenLinks)
             {
-                var mergeds = link.Coordinates.GetMerged(
-                    from: link.From,
-                    to: link.To).ToArray();
+                var mergeds = givenLink.Coordinates.GetMerged(
+                    from: givenLink.From,
+                    to: givenLink.To).ToArray();
 
                 var correcteds = mergeds
                     .WithoutAcutes(angleMin).ToArray();
 
-                link.Set(correcteds);
+                if (!givenLink.Coordinates.SequenceEqual(correcteds))
+                {
+                    links.Remove(givenLink);
+
+                    GetLink(
+                        coordinates: correcteds,
+                        from: givenLink.From,
+                        to: givenLink.To,
+                        ways: givenLink.Ways);
+                }
 
                 infoPackage.NextStep();
             }
@@ -440,7 +451,7 @@ namespace SFASimplifier.Simplifier.Factories
             }
         }
 
-        private void TidyWays(IPackage parentPackage)
+        private void UpdateWays(IPackage parentPackage)
         {
             var wayGroups = Links
                 .SelectMany(l => l.Ways.Select(w => (Way: w, Link: l)))
