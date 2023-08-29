@@ -64,11 +64,13 @@ namespace SFASimplifier.Simplifier.Factories
                 status: "Tidy links");
 
             MergeBranches(
+                status: "Merge branches (round 1 of 2).",
                 parentPackage: infoPackage);
 
             // Merging branches must be done twice to cover both ends of the links
 
             MergeBranches(
+                status: "Merge branches (round 1 of 2).",
                 parentPackage: infoPackage);
 
             MergeLinks(
@@ -315,7 +317,7 @@ namespace SFASimplifier.Simplifier.Factories
             }
         }
 
-        private void MergeBranches(IPackage parentPackage)
+        private void MergeBranches(string status, IPackage parentPackage)
         {
             var relevantLocations = links.Select(l => l.From)
                 .Union(links.Select(l => l.To)).Distinct()
@@ -323,7 +325,7 @@ namespace SFASimplifier.Simplifier.Factories
 
             using var infoPackage = parentPackage.GetPackage(
                 items: relevantLocations,
-                status: "Merge branches.");
+                status: status);
 
             foreach (var relevantLocation in relevantLocations)
             {
