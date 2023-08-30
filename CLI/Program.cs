@@ -45,8 +45,12 @@ namespace SFASimplifier.CLI
         {
             var helpText = HelpText.AutoBuild(
                 parserResult: parserResult,
-                onError: h => h,
-                onExample: e => e);
+                onError: h =>
+                {
+                    h.AdditionalNewLineAfterOption = true;
+                    h.Copyright = string.Empty;
+                    return h;
+                });
 
             Console.WriteLine(helpText);
 
