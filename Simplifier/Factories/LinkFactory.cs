@@ -70,7 +70,7 @@ namespace SFASimplifier.Simplifier.Factories
             // Merging branches must be done twice to cover both ends of the links
 
             MergeBranches(
-                status: "Merge branches (round 1 of 2).",
+                status: "Merge branches (round 2 of 2).",
                 parentPackage: infoPackage);
 
             MergeLinks(
