@@ -3,6 +3,7 @@ using ProgressWatcher.Interfaces;
 using SFASimplifier.Simplifier.Extensions;
 using SFASimplifier.Simplifier.Models;
 using SFASimplifier.Simplifier.Structs;
+using Simplifier.Extensions;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -244,10 +245,11 @@ namespace SFASimplifier.Simplifier.Factories
             foreach (var relevant in relevants)
             {
                 var nexts = segments
-                    .Where(s => s.From.Location == relevant.To.Location
-                        && HasValidAngle(
-                            left: relevant,
-                            right: s)).ToArray();
+                    .Where(s => relevant.Next == s
+                        || (s.From.Location == relevant.To.Location
+                            && relevant.HasValidAngle(
+                                next: s,
+                                angleMin: angleMin))).ToArray();
 
                 if (nexts.Any())
                 {
@@ -277,87 +279,6 @@ namespace SFASimplifier.Simplifier.Factories
             }
 
             return result;
-        }
-
-        private bool HasValidAngle(Segment left, Segment right)
-        {
-            if (left.Geometry.Coordinates.Last().Equals2D(right.Geometry.Coordinates[0]))
-            {
-                var result = !left.Geometry.Coordinates[^1].IsAcuteAngle(
-                    before: left.Geometry.Coordinates[^2],
-                    after: right.Geometry.Coordinates[1],
-                    angleMin: angleMin);
-
-                return result;
-            }
-            else
-            {
-                var beforeCoordinate = left.Geometry.GetNearest(left.To.Location.Geometry.InteriorPoint);
-                var beforePosition = left.Geometry.GetPosition(beforeCoordinate);
-
-                var befores = left.Geometry.Coordinates
-                    .Where(c => left.Geometry.GetPosition(c) < beforePosition)
-                    .TakeLast(2).ToArray();
-
-                var afterCoordinate = right.Geometry.GetNearest(left.To.Location.Geometry.InteriorPoint);
-                var afterPosition = right.Geometry.GetPosition(afterCoordinate);
-
-                var afters = right.Geometry.Coordinates
-                    .Where(c => right.Geometry.GetPosition(c) > afterPosition)
-                    .Take(2).ToArray();
-
-                if (befores.Length > 1)
-                {
-                    var result = !befores[^1].IsAcuteAngle(
-                        before: befores[^2],
-                        after: right.Geometry.Coordinates[0],
-                        angleMin: angleMin);
-
-                    if (!result)
-                    {
-                        return false;
-                    }
-                }
-
-                if (befores.Length > 0
-                    && afters.Length > 0)
-                {
-                    var result = !left.Geometry.Coordinates[^1].IsAcuteAngle(
-                        before: befores[^1],
-                        after: afters[0],
-                        angleMin: angleMin);
-
-                    if (!result)
-                    {
-                        return false;
-                    }
-
-                    result = !right.Geometry.Coordinates[0].IsAcuteAngle(
-                        before: befores[^1],
-                        after: afters[0],
-                        angleMin: angleMin);
-
-                    if (!result)
-                    {
-                        return false;
-                    }
-                }
-
-                if (afters.Length > 1)
-                {
-                    var result = !afters[0].IsAcuteAngle(
-                        before: left.Geometry.Coordinates[^1],
-                        after: afters[1],
-                        angleMin: angleMin);
-
-                    if (!result)
-                    {
-                        return false;
-                    }
-                }
-
-                return true;
-            }
         }
 
         #endregion Private Methods

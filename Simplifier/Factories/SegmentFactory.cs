@@ -91,55 +91,18 @@ namespace SFASimplifier.Simplifier.Factories
 
         #region Private Methods
 
-        private void AddSegment(Node nodeFrom, Node nodeTo, IEnumerable<Coordinate> coordinates, IEnumerable<Way> ways)
-        {
-            var key = new ConnectionKey(
-                from: nodeFrom.Location,
-                to: nodeTo.Location);
-
-            var length = coordinates.GetDistance();
-
-            if (!connections.ContainsKey(key))
-            {
-                connections.Add(
-                    key: key,
-                    value: new HashSet<Segment>());
-            }
-
-            var segment = connections[key]
-                .SingleOrDefault(c => c.Length == length
-                    && c.Geometry.Coordinates.SequenceEqual(coordinates));
-
-            if (segment == default)
-            {
-                var geometry = geometryFactory.CreateLineString(
-                    coordinates: coordinates.ToArray());
-
-                segment = new Segment
-                {
-                    From = nodeFrom,
-                    Geometry = geometry,
-                    Key = key,
-                    Length = length,
-                    To = nodeTo,
-                };
-
-                connections[key].Add(segment);
-            }
-
-            segment.Ways.UnionWith(ways);
-        }
-
         private void AddSegments(Geometry geometry, IEnumerable<Node> nodes, IEnumerable<Way> ways, IPackage parentPackage)
         {
-            var nodeFrom = default(Node);
-            var indexFrom = default(int?);
-
-            var positionFrom = geometry.GetPosition(geometry.Coordinates[0]);
-
             using var infoPackage = parentPackage.GetPackage(
                 steps: geometry.Coordinates.Length,
                 status: "Create segments.");
+
+            var nodeFrom = default(Node);
+            var indexFrom = default(int?);
+            var lastOnward = default(Segment);
+            var lastBackward = default(Segment);
+
+            var positionFrom = geometry.GetPosition(geometry.Coordinates[0]);
 
             for (var indexTo = 1; indexTo < geometry.Coordinates.Length; indexTo++)
             {
@@ -148,8 +111,7 @@ namespace SFASimplifier.Simplifier.Factories
                 var nodeTos = nodes
                     .Where(n => n.Position >= positionFrom
                         && n.Position <= positionTo)
-                    .OrderByDescending(n => !n.Location.IsStation())
-                    .ThenBy(n => n.Position).ToArray();
+                    .OrderBy(n => n.Position).ToArray();
 
                 foreach (var nodeTo in nodeTos)
                 {
@@ -173,20 +135,36 @@ namespace SFASimplifier.Simplifier.Factories
 
                         if (nodeFrom != default)
                         {
-                            AddSegment(
+                            var onward = GetSegment(
                                 nodeFrom: nodeFrom,
                                 nodeTo: nodeTo,
                                 coordinates: coordinates,
                                 ways: ways);
 
+                            if (lastOnward != default)
+                            {
+                                onward.Previous = lastOnward;
+                                lastOnward.Next = onward;
+                            }
+
+                            lastOnward = onward;
+
                             var coordinatesBackward = coordinates
                                 .Reverse().ToArray();
 
-                            AddSegment(
+                            var backward = GetSegment(
                                 nodeFrom: nodeTo,
                                 nodeTo: nodeFrom,
                                 coordinates: coordinatesBackward,
                                 ways: ways);
+
+                            if (lastBackward != default)
+                            {
+                                backward.Next = lastBackward;
+                                lastBackward.Previous = backward;
+                            }
+
+                            lastBackward = backward;
 
                             indexFrom = default;
                         }
@@ -231,6 +209,48 @@ namespace SFASimplifier.Simplifier.Factories
                     }
                 }
             }
+        }
+
+        private Segment GetSegment(Node nodeFrom, Node nodeTo, IEnumerable<Coordinate> coordinates,
+            IEnumerable<Way> ways)
+        {
+            var key = new ConnectionKey(
+                from: nodeFrom.Location,
+                to: nodeTo.Location);
+
+            var length = coordinates.GetDistance();
+
+            if (!connections.ContainsKey(key))
+            {
+                connections.Add(
+                    key: key,
+                    value: new HashSet<Segment>());
+            }
+
+            var result = connections[key]
+                .SingleOrDefault(c => c.Length == length
+                    && c.Geometry.Coordinates.SequenceEqual(coordinates));
+
+            if (result == default)
+            {
+                var geometry = geometryFactory.CreateLineString(
+                    coordinates: coordinates.ToArray());
+
+                result = new Segment
+                {
+                    From = nodeFrom,
+                    Geometry = geometry,
+                    Key = key,
+                    Length = length,
+                    To = nodeTo,
+                };
+            }
+
+            connections[key].Add(result);
+
+            result.Ways.UnionWith(ways);
+
+            return result;
         }
 
         #endregion Private Methods

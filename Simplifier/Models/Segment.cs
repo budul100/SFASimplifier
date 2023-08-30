@@ -14,6 +14,10 @@ namespace SFASimplifier.Simplifier.Models
 
         public Geometry Geometry { get; set; }
 
+        public Segment Next { get; set; }
+
+        public Segment Previous { get; set; }
+
         public Node To { get; set; }
 
         public HashSet<Way> Ways { get; } = new();
