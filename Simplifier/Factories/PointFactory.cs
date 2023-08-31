@@ -2,6 +2,8 @@
 using NetTopologySuite.Geometries;
 using ProgressWatcher.Interfaces;
 using SFASimplifier.Simplifier.Models;
+using Simplifier.Models;
+using StringExtensions;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -35,14 +37,19 @@ namespace SFASimplifier.Simplifier.Factories
 
         #region Public Methods
 
-        public Models.Point Get(Coordinate coordinate)
+        public Models.Point Get(Coordinate coordinate, bool isNode)
         {
-            var geometry = geometryFactory.CreatePoint(
-                coordinate: coordinate);
+            var result = default(Models.Point);
 
-            var result = GetPoint(
-                geometry: geometry,
-                isNode: true);
+            if (bboxEnvelope?.Contains(coordinate) != false)
+            {
+                var geometry = geometryFactory.CreatePoint(
+                    coordinate: coordinate);
+
+                result = GetPoint(
+                    geometry: geometry,
+                    isNode: isNode);
+            }
 
             return result;
         }
@@ -54,7 +61,7 @@ namespace SFASimplifier.Simplifier.Factories
 
             using var infoPackage = parentPackage.GetPackage(
                 items: relevants,
-                status: "Load way points.");
+                status: "Load location points.");
 
             foreach (var relevant in relevants)
             {
@@ -68,21 +75,77 @@ namespace SFASimplifier.Simplifier.Factories
             }
         }
 
+        public void LoadStops(IEnumerable<Stop> stops, IPackage parentPackage)
+        {
+            var relevants = stops
+                .Where(s => s.X.HasValue && s.Y.HasValue)
+                .Select(s => (Stop: s, Coordinate: new Coordinate(s.X.Value, s.Y.Value))).ToArray();
+
+            using var infoPackage = parentPackage.GetPackage(
+                items: relevants,
+                status: "Load stop points.");
+
+            foreach (var relevant in relevants)
+            {
+                var result = Get(
+                    coordinate: relevant.Coordinate,
+                    isNode: false);
+
+                if (result != default)
+                {
+                    var attributes = new Dictionary<string, object>();
+
+                    if (!relevant.Stop.ShortName.IsEmpty())
+                    {
+                        attributes.Add(
+                            key: nameof(Stop.ShortName),
+                            value: relevant.Stop.ShortName);
+                    }
+
+                    if (!relevant.Stop.LongName.IsEmpty())
+                    {
+                        attributes.Add(
+                            key: nameof(Stop.LongName),
+                            value: relevant.Stop.LongName);
+                    }
+
+                    if (relevant.Stop.ExternalNumber.HasValue)
+                    {
+                        attributes.Add(
+                            key: nameof(Stop.ExternalNumber),
+                            value: relevant.Stop.ExternalNumber);
+                    }
+
+                    if (attributes.Any())
+                    {
+                        result.Feature = new Feature
+                        {
+                            Attributes = new AttributesTable(attributes)
+                        };
+                    }
+                }
+
+                infoPackage.NextStep();
+            }
+        }
+
         public void LoadWays(IEnumerable<Way> ways, IPackage parentPackage)
         {
             using var infoPackage = parentPackage.GetPackage(
                 items: ways,
-                status: "Load way borders.");
+                status: "Load way points.");
 
             foreach (var way in ways)
             {
                 foreach (var geometry in way.Geometries)
                 {
                     Get(
-                        coordinate: geometry.Coordinates[0]);
+                        coordinate: geometry.Coordinates[0],
+                        isNode: true);
 
                     Get(
-                        coordinate: geometry.Coordinates[^1]);
+                        coordinate: geometry.Coordinates[^1],
+                        isNode: true);
                 }
 
                 infoPackage.NextStep();

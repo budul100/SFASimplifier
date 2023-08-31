@@ -6,6 +6,7 @@ using SFASimplifier.Simplifier.Factories;
 using SFASimplifier.Simplifier.Models;
 using SFASimplifier.Simplifier.Repositories;
 using SFASimplifier.Simplifier.Writers;
+using Simplifier.Repositories;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,8 +18,9 @@ namespace SFASimplifier.Simplifier
         #region Private Fields
 
         private const double StatusWeightDeterminingConnections = 0.2;
-        private const double StatusWeightDeterminingSegments = 0.6;
-        private const double StatusWeightLoadingFiles = 0.1;
+        private const double StatusWeightDeterminingSegments = 0.5;
+        private const double StatusWeightLoadingFeatures = 0.1;
+        private const double StatusWeightLoadingStops = 0.1;
 
         private readonly ChainFactory chainFactory;
         private readonly FeatureWriter featureWriter;
@@ -99,11 +101,15 @@ namespace SFASimplifier.Simplifier
         public void Run()
         {
             using var parentPackage = progressWatcher.Initialize(
-                allSteps: 4,
+                allSteps: 5,
                 status: "Simplify SFA data.");
 
-            LoadFiles(
-                inputPaths: options.InputPaths,
+            LoadStops(
+                paths: options.StopPaths,
+                parentPackage: parentPackage);
+
+            LoadFeatures(
+                paths: options.InputPaths,
                 parentPackage: parentPackage);
 
             DetermineSegments(
@@ -153,7 +159,7 @@ namespace SFASimplifier.Simplifier
                 parentPackage: infoPackage);
         }
 
-        private void LoadFeatures(string inputPath, IPackage parentPackage)
+        private void ImportFeatures(string path, IPackage parentPackage)
         {
             using var infoPackage = parentPackage.GetPackage(
                 steps: 6,
@@ -162,7 +168,7 @@ namespace SFASimplifier.Simplifier
             var collectionRepository = new CollectionRepository();
 
             collectionRepository.Load(
-                file: inputPath,
+                path: path,
                 parentPackage: infoPackage);
 
             var pointAttributesFilter = options.PointAttributesFilter
@@ -199,17 +205,50 @@ namespace SFASimplifier.Simplifier
                 parentPackage: infoPackage);
         }
 
-        private void LoadFiles(IEnumerable<string> inputPaths, IPackage parentPackage)
+        private void ImportStops(string path, IPackage parentPackage)
         {
             using var infoPackage = parentPackage.GetPackage(
-                items: inputPaths,
-                status: "Load files.",
-                weight: StatusWeightLoadingFiles);
+                steps: 2,
+                status: "Load stops.");
 
-            foreach (var inputPath in inputPaths)
+            var stopRepository = new StopRepository(
+                stopDelimiter: options.StopDelimiter);
+
+            stopRepository.Load(
+                path: path,
+                parentPackage: infoPackage);
+
+            pointFactory.LoadStops(
+                stops: stopRepository.Stops,
+                parentPackage: infoPackage);
+        }
+
+        private void LoadFeatures(IEnumerable<string> paths, IPackage parentPackage)
+        {
+            using var infoPackage = parentPackage.GetPackage(
+                items: paths,
+                status: "Load feature files.",
+                weight: StatusWeightLoadingFeatures);
+
+            foreach (var path in paths)
             {
-                LoadFeatures(
-                    inputPath: inputPath,
+                ImportFeatures(
+                    path: path,
+                    parentPackage: infoPackage);
+            }
+        }
+
+        private void LoadStops(IEnumerable<string> paths, IPackage parentPackage)
+        {
+            using var infoPackage = parentPackage.GetPackage(
+                items: paths,
+                status: "Load stop files.",
+                weight: StatusWeightLoadingStops);
+
+            foreach (var path in paths)
+            {
+                ImportStops(
+                    path: path,
                     parentPackage: infoPackage);
             }
         }

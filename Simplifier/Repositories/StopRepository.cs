@@ -1,18 +1,32 @@
-﻿using NetTopologySuite.Features;
-using NetTopologySuite.IO;
-using Newtonsoft.Json;
+﻿using FileHelpers;
 using ProgressWatcher.Interfaces;
+using Simplifier.Models;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-namespace SFASimplifier.Simplifier.Repositories
+namespace Simplifier.Repositories
 {
-    internal class CollectionRepository
+    internal class StopRepository
     {
+        #region Private Fields
+
+        private readonly string stopDelimiter;
+
+        #endregion Private Fields
+
+        #region Public Constructors
+
+        public StopRepository(string stopDelimiter)
+        {
+            this.stopDelimiter = stopDelimiter;
+        }
+
+        #endregion Public Constructors
+
         #region Public Properties
 
-        public IEnumerable<Feature> Collection { get; private set; }
+        public IEnumerable<Stop> Stops { get; private set; }
 
         #endregion Public Properties
 
@@ -33,33 +47,25 @@ namespace SFASimplifier.Simplifier.Repositories
                     message: $"The file \"{path}\" does not exist.");
             }
 
-            Collection = GetCollection(
+            Stops = GetCollection(
                 path: path,
                 parentPackage: parentPackage);
-
-            if (Collection?.Any() != true)
-            {
-                throw new System.ApplicationException(
-                    message: $"The file \"{path}\" does not contain any feature collection.");
-            }
         }
 
         #endregion Public Methods
 
         #region Private Methods
 
-        private static IEnumerable<Feature> GetCollection(string path, IPackage parentPackage)
+        private IEnumerable<Stop> GetCollection(string path, IPackage parentPackage)
         {
             using var infoPackage = parentPackage.GetPackage(
-                status: "Loading collection");
+                status: "Loading stops.");
 
-            var serializer = GeoJsonSerializer.Create();
+            var engine = new DelimitedFileEngine<Stop>();
 
-            using var stringReader = new StreamReader(path);
-            using var jsonReader = new JsonTextReader(stringReader);
+            engine.Options.Delimiter = stopDelimiter;
 
-            var collections = serializer.Deserialize<FeatureCollection>(jsonReader);
-            var result = collections.OfType<Feature>().ToArray();
+            var result = engine.ReadFile(path).ToArray();
 
             return result;
         }

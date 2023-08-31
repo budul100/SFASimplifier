@@ -6,6 +6,12 @@ namespace SFASimplifier.Simplifier.Models
 {
     public class Options
     {
+        #region Public Fields
+
+        public const string DefaultDelimiter = ";";
+
+        #endregion Public Fields
+
         #region Public Properties
 
         [Option(
@@ -188,6 +194,20 @@ namespace SFASimplifier.Simplifier.Models
             Required = false,
             Default = false)]
         public bool PreventMergingAttributes { get; set; }
+
+        [Option(
+            longName: "stopdelimiter",
+            HelpText = "Delimiter of the csv files defining stop locations.",
+            Default = DefaultDelimiter)]
+        public string StopDelimiter { get; set; }
+
+        [Option(
+            shortName: 's',
+            longName: "stoppaths",
+            HelpText = "Pathes of csv files defining stop locations.",
+            Required = true,
+            Separator = ',')]
+        public IEnumerable<string> StopPaths { get; set; }
 
         #endregion Public Properties
     }

@@ -49,7 +49,8 @@ namespace SFASimplifier.Simplifier.Factories
         public Models.Location Get(Coordinate coordinate)
         {
             var point = pointFactory.Get(
-                coordinate: coordinate);
+                coordinate: coordinate,
+                isNode: true);
 
             var result = Get(
                 point: point);
