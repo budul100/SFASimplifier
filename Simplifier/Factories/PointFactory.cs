@@ -41,7 +41,8 @@ namespace SFASimplifier.Simplifier.Factories
                 coordinate: coordinate);
 
             var result = GetPoint(
-                geometry: geometry);
+                geometry: geometry,
+                isNode: true);
 
             return result;
         }
@@ -58,7 +59,8 @@ namespace SFASimplifier.Simplifier.Factories
             foreach (var relevant in relevants)
             {
                 var result = GetPoint(
-                    geometry: relevant.Geometry);
+                    geometry: relevant.Geometry,
+                    isNode: false);
 
                 result.Feature = relevant;
 
@@ -91,13 +93,14 @@ namespace SFASimplifier.Simplifier.Factories
 
         #region Private Methods
 
-        private Models.Point GetPoint(Geometry geometry)
+        private Models.Point GetPoint(Geometry geometry, bool isNode)
         {
             if (!points.ContainsKey(geometry))
             {
                 var result = new Models.Point()
                 {
                     Geometry = geometry,
+                    IsNode = isNode,
                 };
 
                 points.Add(

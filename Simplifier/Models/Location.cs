@@ -7,9 +7,9 @@ namespace SFASimplifier.Simplifier.Models
     {
         #region Public Properties
 
-        public Geometry Geometry { get; set; }
-
         public Geometry Center { get; set; }
+
+        public Geometry Geometry { get; set; }
 
         public string Key { get; set; }
 

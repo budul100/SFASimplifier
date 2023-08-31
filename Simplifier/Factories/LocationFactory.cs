@@ -169,7 +169,11 @@ namespace SFASimplifier.Simplifier.Factories
                 main.Points
                     .UnionWith(area.SelectMany(l => l.Points));
 
-                var coordinates = main.Points
+                var relevants = main.Points.Any(p => p.IsNode)
+                    ? main.Points.Where(p => p.IsNode)
+                    : main.Points;
+
+                var coordinates = relevants
                     .Select(p => p.Geometry.Coordinate)
                     .Distinct().ToArray();
 

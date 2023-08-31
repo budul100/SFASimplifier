@@ -11,6 +11,8 @@ namespace SFASimplifier.Simplifier.Models
 
         public Geometry Geometry { get; set; }
 
+        public bool IsNode { get; set; }
+
         #endregion Public Properties
     }
 }
