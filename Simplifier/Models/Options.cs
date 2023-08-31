@@ -205,7 +205,6 @@ namespace SFASimplifier.Simplifier.Models
             shortName: 's',
             longName: "stoppaths",
             HelpText = "Pathes of csv files defining stop locations.",
-            Required = true,
             Separator = ',')]
         public IEnumerable<string> StopPaths { get; set; }
 
