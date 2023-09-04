@@ -12,7 +12,7 @@
 	<PropertyGroup>
 		<VersionMajor>1</VersionMajor>
 		<VersionMinor>4</VersionMinor>
-		<VersionBuild>0</VersionBuild>
+		<VersionBuild>1</VersionBuild>
 		<Version>$(VersionMajor).$(VersionMinor).$(VersionBuild)</Version>
 		<AssemblyVersion>$(VersionMajor).$(VersionMinor).$(VersionBuild)</AssemblyVersion>
 		<AssemblyName>SFASimplifier</AssemblyName>
