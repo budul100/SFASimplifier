@@ -100,6 +100,12 @@ namespace SFASimplifier.Simplifier
 
         public void Run()
         {
+            if (options.InputPaths.Contains(options.OutputPath))
+            {
+                throw new ApplicationException(
+                    message: "The output path is a path of an input file, too. This is not allowed.");
+            }
+
             using var parentPackage = progressWatcher.Initialize(
                 allSteps: 5,
                 status: "Simplify SFA data.");
@@ -119,6 +125,7 @@ namespace SFASimplifier.Simplifier
                 parentPackage: parentPackage);
 
             WriteFiles(
+                path: options.OutputPath,
                 parentPackage: parentPackage);
         }
 
@@ -277,13 +284,13 @@ namespace SFASimplifier.Simplifier
             }
         }
 
-        private void WriteFiles(IPackage parentPackage)
+        private void WriteFiles(string path, IPackage parentPackage)
         {
             using var infoPackage = parentPackage.GetPackage(
                 status: "Write features collection.");
 
             featureWriter.Write(
-                path: options.OutputPath,
+                path: path,
                 parentPackage: infoPackage);
         }
 
