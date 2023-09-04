@@ -52,17 +52,22 @@ namespace SFASimplifier.Simplifier.Factories
                 steps: 3,
                 status: "Determine segment chains");
 
+            var anyStations = segments.Any(s => s.To.Location.IsStation());
+
             AddEndeds(
                 segments: segments,
+                anyStations: anyStations,
                 parentPackage: infoPackage);
 
             var nexts = GetNexts(
                 segments: segments,
+                anyStations: anyStations,
                 parentPackage: infoPackage);
 
             AddOpens(
                 segments: segments,
                 nexts: nexts,
+                anyStations: anyStations,
                 parentPackage: infoPackage);
         }
 
@@ -103,11 +108,10 @@ namespace SFASimplifier.Simplifier.Factories
             }
         }
 
-        private void AddEndeds(IEnumerable<Segment> segments, IPackage parentPackage)
+        private void AddEndeds(IEnumerable<Segment> segments, bool anyStations, IPackage parentPackage)
         {
             var relevants = segments
-                .Where(s => s.From.Location.IsStation()
-                    && s.To.Location.IsStation()
+                .Where(s => (!anyStations || (s.From.Location.IsStation() && s.To.Location.IsStation()))
                     && !locationFactory.IsSimilar(
                         from: s.From.Location,
                         to: s.To.Location)).ToArray();
@@ -129,11 +133,10 @@ namespace SFASimplifier.Simplifier.Factories
         }
 
         private void AddOpens(IEnumerable<Segment> segments, IDictionary<Segment, IEnumerable<Segment>> nexts,
-            IPackage parentPackage)
+            bool anyStations, IPackage parentPackage)
         {
             var relevants = segments
-                .Where(s => s.From.Location.IsStation()
-                    && !s.To.Location.IsStation())
+                .Where(s => !anyStations || (s.From.Location.IsStation() && !s.To.Location.IsStation()))
                 .OrderBy(s => s.From.Location.Key)
                 .ThenBy(s => s.Geometry.Length).ToArray();
 
@@ -149,14 +152,15 @@ namespace SFASimplifier.Simplifier.Factories
                     chain: chain,
                     current: relevant,
                     nexts: nexts,
-                    covereds: new HashSet<Segment>());
+                    covereds: new HashSet<Segment>(),
+                    anyStations: anyStations);
 
                 infoPackage.NextStep();
             }
         }
 
         private void FindChain(Chain chain, Segment current, IDictionary<Segment, IEnumerable<Segment>> nexts,
-            HashSet<Segment> covereds)
+            HashSet<Segment> covereds, bool anyStations)
         {
             if (nexts.ContainsKey(current))
             {
@@ -180,13 +184,15 @@ namespace SFASimplifier.Simplifier.Factories
 
                         covereds.UnionWith(result.Segments);
 
-                        if (!result.To.Location.IsStation())
+                        if (anyStations
+                            && !result.To.Location.IsStation())
                         {
                             FindChain(
                                 chain: result,
                                 current: relevant,
                                 nexts: nexts,
-                                covereds: covereds);
+                                covereds: covereds,
+                                anyStations: anyStations);
                         }
                         else
                         {
@@ -230,10 +236,11 @@ namespace SFASimplifier.Simplifier.Factories
             return result;
         }
 
-        private IDictionary<Segment, IEnumerable<Segment>> GetNexts(IEnumerable<Segment> segments, IPackage parentPackage)
+        private IDictionary<Segment, IEnumerable<Segment>> GetNexts(IEnumerable<Segment> segments, bool anyStations,
+            IPackage parentPackage)
         {
             var relevants = segments
-                .Where(s => !s.To.Location.IsStation())
+                .Where(s => !anyStations || !s.To.Location.IsStation())
                 .OrderBy(s => s.From.Location.Key).ToArray();
 
             using var infoPackage = parentPackage.GetPackage(
@@ -261,20 +268,23 @@ namespace SFASimplifier.Simplifier.Factories
                 infoPackage.NextStep();
             }
 
-            while (true)
+            if (anyStations)
             {
-                var deadEnds = result
-                    .Where(n => !n.Value.Any(s => s.To.Location.IsStation() || result.ContainsKey(s)))
-                    .Select(n => n.Key).ToArray();
-
-                if (!deadEnds.Any())
+                while (true)
                 {
-                    break;
-                }
+                    var deadEnds = result
+                        .Where(n => !n.Value.Any(s => s.To.Location.IsStation() || result.ContainsKey(s)))
+                        .Select(n => n.Key).ToArray();
 
-                foreach (var deadEnd in deadEnds)
-                {
-                    result.Remove(deadEnd);
+                    if (!deadEnds.Any())
+                    {
+                        break;
+                    }
+
+                    foreach (var deadEnd in deadEnds)
+                    {
+                        result.Remove(deadEnd);
+                    }
                 }
             }
 
