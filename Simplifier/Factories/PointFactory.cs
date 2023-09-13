@@ -93,6 +93,8 @@ namespace SFASimplifier.Simplifier.Factories
 
                 if (result != default)
                 {
+                    result.Stop = relevant.Stop;
+
                     var attributes = new Dictionary<string, object>();
 
                     if (!relevant.Stop.ShortName.IsEmpty())

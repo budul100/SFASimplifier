@@ -38,7 +38,7 @@ namespace SFASimplifier.Simplifier.Extensions
         }
 
         public static IEnumerable<Coordinate> GetDirected(this IEnumerable<Coordinate> coordinates,
-                   Models.Location from, Models.Location to)
+            Models.Location from, Models.Location to)
         {
             var fromCoordinate = from.Center?.Coordinate
                 ?? from.Geometry.InteriorPoint?.Coordinate;

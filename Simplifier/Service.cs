@@ -7,6 +7,7 @@ using SFASimplifier.Simplifier.Models;
 using SFASimplifier.Simplifier.Repositories;
 using SFASimplifier.Simplifier.Writers;
 using Simplifier.Repositories;
+using Simplifier.Writers;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -23,7 +24,6 @@ namespace SFASimplifier.Simplifier
         private const double StatusWeightLoadingStops = 0.1;
 
         private readonly ChainFactory chainFactory;
-        private readonly FeatureWriter featureWriter;
         private readonly GeometryFactory geometryFactory;
         private readonly LinkFactory linkFactory;
         private readonly LocationFactory locationFactory;
@@ -88,10 +88,6 @@ namespace SFASimplifier.Simplifier
                 lengthSplit: options.LinksLengthSplit,
                 distanceToJunction: options.DistanceToJunction,
                 distanceToMerge: options.DistanceToMerge);
-
-            featureWriter = new FeatureWriter(
-                wayFactory: wayFactory,
-                preventMergingAttributes: options.PreventMergingAttributes);
         }
 
         #endregion Public Constructors
@@ -100,10 +96,16 @@ namespace SFASimplifier.Simplifier
 
         public void Run()
         {
-            if (options.InputPaths.Contains(options.OutputPath))
+            if (options.PathsInFeatures.Contains(options.PathOutFeatures))
             {
                 throw new ApplicationException(
-                    message: "The output path is a path of an input file, too. This is not allowed.");
+                    message: $"The output path {options.PathOutFeatures} is a path of an input file, too. This is not allowed.");
+            }
+
+            if (options.PathsInStops.Contains(options.PathOutStops))
+            {
+                throw new ApplicationException(
+                    message: $"The output path {options.PathOutFeatures} is a path of an input file, too. This is not allowed.");
             }
 
             using var parentPackage = progressWatcher.Initialize(
@@ -111,11 +113,11 @@ namespace SFASimplifier.Simplifier
                 status: "Simplify SFA data.");
 
             LoadStops(
-                paths: options.StopPaths,
+                paths: options.PathsInStops,
                 parentPackage: parentPackage);
 
             LoadFeatures(
-                paths: options.InputPaths,
+                paths: options.PathsInFeatures,
                 parentPackage: parentPackage);
 
             DetermineSegments(
@@ -125,7 +127,8 @@ namespace SFASimplifier.Simplifier
                 parentPackage: parentPackage);
 
             WriteFiles(
-                path: options.OutputPath,
+                pathGeoJson: options.PathOutFeatures,
+                pathStops: options.PathOutStops,
                 parentPackage: parentPackage);
         }
 
@@ -284,13 +287,26 @@ namespace SFASimplifier.Simplifier
             }
         }
 
-        private void WriteFiles(string path, IPackage parentPackage)
+        private void WriteFiles(string pathGeoJson, string pathStops, IPackage parentPackage)
         {
             using var infoPackage = parentPackage.GetPackage(
-                status: "Write features collection.");
+                steps: 2,
+                status: "Write outputs.");
+
+            var featureWriter = new FeatureWriter(
+                wayFactory: wayFactory,
+                preventMergingAttributes: options.PreventMergingAttributes);
 
             featureWriter.Write(
-                path: path,
+                path: pathGeoJson,
+                parentPackage: infoPackage);
+
+            var stopWriter = new StopWriter(
+                locationFactory: locationFactory,
+                stopDelimiter: options.StopDelimiter);
+
+            stopWriter.Write(
+                path: pathStops,
                 parentPackage: infoPackage);
         }
 

@@ -6,7 +6,7 @@
     },
     "Convert Bremen": {
       "commandName": "Project",
-      "commandLineArgs": "-i \"..\\..\\..\\..\\Additionals\\Samples\\Bremen.geojson\" -o \"..\\..\\..\\..\\Additionals\\Samples\\Bremen_.geojson\""
+      "commandLineArgs": "-i \"..\\..\\..\\..\\Additionals\\Samples\\Bremen.geojson\" -s \"..\\..\\..\\..\\Additionals\\Samples\\Germany.txt\" -o \"..\\..\\..\\..\\Additionals\\Samples\\Bremen_.geojson\" -t \"..\\..\\..\\..\\Additionals\\Samples\\Bremen_.txt\""
     },
     "Convert Bremen (filtered)": {
       "commandName": "Project",
@@ -22,7 +22,7 @@
     },
     "Convert East (filtered)": {
       "commandName": "Project",
-      "commandLineArgs": "-i \"..\\..\\..\\..\\Additionals\\Samples\\Germany-East.geojson\" -s \"..\\..\\..\\..\\Additionals\\Samples\\Germany.txt\" -o \"..\\..\\..\\..\\Additionals\\Samples\\Germany-East_.geojson\" --bboxfilter 13.199387,52.437595,13.580475,52.580314 --locfuzzyscore 50"
+      "commandLineArgs": "-i \"..\\..\\..\\..\\Additionals\\Samples\\Germany-East.geojson\" -s \"..\\..\\..\\..\\Additionals\\Samples\\Germany.txt\" -o \"..\\..\\..\\..\\Additionals\\Samples\\Germany-East_.geojson\" -t \"..\\..\\..\\..\\Additionals\\Samples\\Germany-East_.txt\" --bboxfilter 13.199387,52.437595,13.580475,52.580314 --locfuzzyscore 50"
     }
   }
 }

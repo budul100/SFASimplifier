@@ -1,5 +1,6 @@
 ﻿using NetTopologySuite.Features;
 using NetTopologySuite.Geometries;
+using Simplifier.Models;
 
 namespace SFASimplifier.Simplifier.Models
 {
@@ -12,6 +13,8 @@ namespace SFASimplifier.Simplifier.Models
         public Geometry Geometry { get; set; }
 
         public bool IsNode { get; set; }
+
+        public Stop Stop { get; set; }
 
         #endregion Public Properties
     }

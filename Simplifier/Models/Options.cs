@@ -74,14 +74,6 @@ namespace SFASimplifier.Simplifier.Models
         public int DistanceToMerge { get; set; }
 
         [Option(
-            shortName: 'i',
-            longName: "inputpaths",
-            HelpText = "Pathes of the GeoJSON files to be input.",
-            Required = true,
-            Separator = ',')]
-        public IEnumerable<string> InputPaths { get; set; }
-
-        [Option(
             longName: "lineattrfilter",
             HelpText = "Key value pairs of attributes where one must exist to be considered as line. The value must be a regular expression. " +
                 "Keys, values, and pairs must be split by a comma.",
@@ -145,9 +137,30 @@ namespace SFASimplifier.Simplifier.Models
         [Option(
             shortName: 'o',
             longName: "outputpath",
-            HelpText = "Path of the resulting geojson features file.",
+            HelpText = "Path of the resulting geojson collection file.",
             Required = true)]
-        public string OutputPath { get; set; }
+        public string PathOutFeatures { get; set; }
+
+        [Option(
+            shortName: 't',
+            longName: "stoppath",
+            HelpText = "Path of the resulting stop location file.")]
+        public string PathOutStops { get; set; }
+
+        [Option(
+            shortName: 'i',
+            longName: "inputpaths",
+            HelpText = "Pathes of the GeoJSON files to be input.",
+            Required = true,
+            Separator = ',')]
+        public IEnumerable<string> PathsInFeatures { get; set; }
+
+        [Option(
+            shortName: 's',
+            longName: "stoppaths",
+            HelpText = "Pathes of csv files defining stop locations.",
+            Separator = ',')]
+        public IEnumerable<string> PathsInStops { get; set; }
 
         [Option(
             longName: "pointattrfilter",
@@ -200,13 +213,6 @@ namespace SFASimplifier.Simplifier.Models
             HelpText = "Delimiter of the csv files defining stop locations.",
             Default = DefaultDelimiter)]
         public string StopDelimiter { get; set; }
-
-        [Option(
-            shortName: 's',
-            longName: "stoppaths",
-            HelpText = "Pathes of csv files defining stop locations.",
-            Separator = ',')]
-        public IEnumerable<string> StopPaths { get; set; }
 
         #endregion Public Properties
     }
