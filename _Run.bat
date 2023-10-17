@@ -12,7 +12,7 @@ echo.
 echo Simplify %INPUTFILE%
 echo.
 
-.\_Publish\SFASimplifier.exe -i "%INPUTFILE%" -o "%FEATURESFILE% --bboxfilter %BBOX%"
+.\_Publish\SFASimplifier.exe -i "%INPUTFILE%" -o "%FEATURESFILE%" --bboxfilter "%BBOX%"
 
 echo.
 pause
