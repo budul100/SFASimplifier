@@ -175,6 +175,9 @@ namespace SFASimplifier.Simplifier.Models
                 "railway", "halt",
                 "railway", "station",
                 "railway", "stop",
+                "subway", "halt",
+                "subway", "station",
+                "subway", "stop",
             })]
         public IEnumerable<string> PointAttributesFilter { get; set; }
 
